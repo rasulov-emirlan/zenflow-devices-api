@@ -293,8 +293,8 @@ after migrations. In `prod` the flag is rejected at config load.
 ## Observability
 
 The app emits structured logs, Prometheus metrics, and OpenTelemetry traces.
-Collectors (Prometheus, Grafana, Tempo, OTEL collector) are deployed
-separately and are not part of this repo's `docker-compose.yml`.
+A local collector stack (Prometheus, Grafana, Tempo, OTel Collector) ships
+with `docker-compose.yml` — see "Observability Stack (local)" below.
 
 ### Logs (slog)
 
@@ -346,3 +346,41 @@ failures are non-fatal — the app keeps running without export.
 | `OTLP_ENDPOINT` | `otel-collector:4317` | OTLP gRPC endpoint (host:port) |
 | `TRACING_ENABLED` | `false` | Enable OTEL trace export |
 | `OTEL_SERVICE_NAME` | `zenflow-devices-api` | `service.name` resource attr |
+
+### Observability Stack (local)
+
+A full Prometheus + Grafana + Tempo + OTel-Collector stack is wired into
+`docker-compose.yml` for local use. It scrapes the api's admin port and
+provisions Grafana datasources and dashboards automatically.
+
+```bash
+# bring up just the observability side (api/postgres may already be up)
+make observe-up
+
+# or bring up everything (api + postgres + observability)
+make up
+
+# tear the observability side down (keeps api/postgres running)
+make observe-down
+```
+
+URLs:
+
+- Grafana   — http://localhost:3000  (anonymous Admin, login form disabled)
+- Prometheus — http://localhost:9091  (host port; container still listens on 9090)
+- Tempo     — http://localhost:3200
+- OTel Collector OTLP/gRPC — `otel-collector:4317` (inside the compose network)
+
+Ships with two pre-provisioned dashboards under the "Zenflow" folder:
+
+- **Zenflow — HTTP RED**: request rate by route, status-class mix, 5xx
+  error percentage, p50/p95/p99 latency overall and per route, in-flight
+  gauge, and domain counters (profiles created, validation errors by
+  field, template lookup outcomes).
+- **Zenflow — DB & Go Runtime**: DB queries/sec by op+table, DB error
+  rate, DB p50/p95/p99 duration, goroutines, heap in-use, and GC pause
+  quantiles.
+
+Both dashboards target datasource uid `prometheus-local`; Tempo is
+wired via uid `tempo-local` with `tracesToMetrics` pointing back at
+Prometheus so you can pivot from a trace to RED metrics.
