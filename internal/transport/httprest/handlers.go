@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/profiles"
+	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/deviceprofiles"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/templates"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/transport/httprest/gen"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/transport/httprest/respond"
@@ -12,51 +12,49 @@ import (
 
 // Handlers implements gen.ServerInterface.
 type Handlers struct {
-	profiles  *profiles.Service
-	templates *templates.Service
-	log       *slog.Logger
+	deviceProfiles *deviceprofiles.Service
+	templates      *templates.Service
+	log            *slog.Logger
 }
 
 var _ gen.ServerInterface = (*Handlers)(nil)
-
-const timeFormat = "2006-01-02T15:04:05Z"
 
 // GetHealth implements GET /healthz.
 func (h *Handlers) GetHealth(w http.ResponseWriter, _ *http.Request) {
 	respond.JSON(w, http.StatusOK, gen.HealthResponse{Status: "ok"})
 }
 
-// ListProfiles implements GET /profiles.
-func (h *Handlers) ListProfiles(w http.ResponseWriter, r *http.Request, params gen.ListProfilesParams) {
-	page := profiles.Page{Limit: 50, Offset: 0}
+// ListDeviceProfiles implements GET /device-profiles.
+func (h *Handlers) ListDeviceProfiles(w http.ResponseWriter, r *http.Request, params gen.ListDeviceProfilesParams) {
+	page := deviceprofiles.Page{Limit: 50, Offset: 0}
 	if params.Limit != nil {
 		page.Limit = *params.Limit
 	}
 	if params.Offset != nil {
 		page.Offset = *params.Offset
 	}
-	items, err := h.profiles.List(r.Context(), UserID(r.Context()), page)
+	items, err := h.deviceProfiles.List(r.Context(), UserID(r.Context()), page)
 	if err != nil {
 		respond.DomainError(w, h.log, err)
 		return
 	}
-	out := make([]gen.Profile, len(items))
+	out := make([]gen.DeviceProfile, len(items))
 	for i, p := range items {
-		out[i] = toGenProfile(p)
+		out[i] = toGenDeviceProfile(p)
 	}
-	respond.JSON(w, http.StatusOK, gen.ProfileList{Items: out})
+	respond.JSON(w, http.StatusOK, gen.DeviceProfileList{Items: out})
 }
 
-// CreateProfile implements POST /profiles.
-func (h *Handlers) CreateProfile(w http.ResponseWriter, r *http.Request) {
-	var req gen.CreateProfileRequest
+// CreateDeviceProfile implements POST /device-profiles.
+func (h *Handlers) CreateDeviceProfile(w http.ResponseWriter, r *http.Request) {
+	var req gen.CreateDeviceProfileRequest
 	if err := respond.DecodeBody(r, &req); err != nil {
 		respond.Error(w, http.StatusBadRequest, "invalid_body", err.Error())
 		return
 	}
-	in := profiles.Input{
+	in := deviceprofiles.Input{
 		Name:          req.Name,
-		DeviceType:    profiles.DeviceType(req.DeviceType),
+		DeviceType:    deviceprofiles.DeviceType(req.DeviceType),
 		WindowWidth:   req.WindowWidth,
 		WindowHeight:  req.WindowHeight,
 		UserAgent:     req.UserAgent,
@@ -67,32 +65,32 @@ func (h *Handlers) CreateProfile(w http.ResponseWriter, r *http.Request) {
 	if req.Extra != nil {
 		in.Extra = *req.Extra
 	}
-	p, err := h.profiles.Create(r.Context(), UserID(r.Context()), in)
+	p, err := h.deviceProfiles.Create(r.Context(), UserID(r.Context()), in)
 	if err != nil {
 		respond.DomainError(w, h.log, err)
 		return
 	}
-	respond.JSON(w, http.StatusCreated, toGenProfile(p))
+	respond.JSON(w, http.StatusCreated, toGenDeviceProfile(p))
 }
 
-// GetProfile implements GET /profiles/{id}.
-func (h *Handlers) GetProfile(w http.ResponseWriter, r *http.Request, id gen.ProfileID) {
-	p, err := h.profiles.Get(r.Context(), UserID(r.Context()), id)
+// GetDeviceProfile implements GET /device-profiles/{id}.
+func (h *Handlers) GetDeviceProfile(w http.ResponseWriter, r *http.Request, id gen.DeviceProfileID) {
+	p, err := h.deviceProfiles.Get(r.Context(), UserID(r.Context()), id)
 	if err != nil {
 		respond.DomainError(w, h.log, err)
 		return
 	}
-	respond.JSON(w, http.StatusOK, toGenProfile(p))
+	respond.JSON(w, http.StatusOK, toGenDeviceProfile(p))
 }
 
-// PatchProfile implements PATCH /profiles/{id}.
-func (h *Handlers) PatchProfile(w http.ResponseWriter, r *http.Request, id gen.ProfileID) {
-	var req gen.PatchProfileRequest
+// PatchDeviceProfile implements PATCH /device-profiles/{id}.
+func (h *Handlers) PatchDeviceProfile(w http.ResponseWriter, r *http.Request, id gen.DeviceProfileID) {
+	var req gen.PatchDeviceProfileRequest
 	if err := respond.DecodeBody(r, &req); err != nil {
 		respond.Error(w, http.StatusBadRequest, "invalid_body", err.Error())
 		return
 	}
-	patch := profiles.Patch{
+	patch := deviceprofiles.Patch{
 		Name:         req.Name,
 		WindowWidth:  req.WindowWidth,
 		WindowHeight: req.WindowHeight,
@@ -101,24 +99,24 @@ func (h *Handlers) PatchProfile(w http.ResponseWriter, r *http.Request, id gen.P
 		Extra:        req.Extra,
 	}
 	if req.DeviceType != nil {
-		dt := profiles.DeviceType(*req.DeviceType)
+		dt := deviceprofiles.DeviceType(*req.DeviceType)
 		patch.DeviceType = &dt
 	}
 	if req.CustomHeaders != nil {
 		hs := fromGenHeaders(req.CustomHeaders)
 		patch.CustomHeaders = &hs
 	}
-	p, err := h.profiles.Patch(r.Context(), UserID(r.Context()), id, patch)
+	p, err := h.deviceProfiles.Patch(r.Context(), UserID(r.Context()), id, patch)
 	if err != nil {
 		respond.DomainError(w, h.log, err)
 		return
 	}
-	respond.JSON(w, http.StatusOK, toGenProfile(p))
+	respond.JSON(w, http.StatusOK, toGenDeviceProfile(p))
 }
 
-// DeleteProfile implements DELETE /profiles/{id}.
-func (h *Handlers) DeleteProfile(w http.ResponseWriter, r *http.Request, id gen.ProfileID) {
-	if err := h.profiles.Delete(r.Context(), UserID(r.Context()), id); err != nil {
+// DeleteDeviceProfile implements DELETE /device-profiles/{id}.
+func (h *Handlers) DeleteDeviceProfile(w http.ResponseWriter, r *http.Request, id gen.DeviceProfileID) {
+	if err := h.deviceProfiles.Delete(r.Context(), UserID(r.Context()), id); err != nil {
 		respond.DomainError(w, h.log, err)
 		return
 	}
@@ -149,9 +147,9 @@ func (h *Handlers) GetTemplate(w http.ResponseWriter, r *http.Request, slug stri
 	respond.JSON(w, http.StatusOK, toGenTemplate(t))
 }
 
-func toGenProfile(p profiles.Profile) gen.Profile {
+func toGenDeviceProfile(p deviceprofiles.DeviceProfile) gen.DeviceProfile {
 	headers := toGenHeaders(p.CustomHeaders)
-	out := gen.Profile{
+	out := gen.DeviceProfile{
 		Id:            p.ID,
 		UserId:        p.UserID,
 		Name:          p.Name,
@@ -185,7 +183,7 @@ func toGenTemplate(t templates.Template) gen.Template {
 	}
 }
 
-func toGenHeaders(in []profiles.Header) []gen.Header {
+func toGenHeaders(in []deviceprofiles.Header) []gen.Header {
 	out := make([]gen.Header, len(in))
 	for i, h := range in {
 		out[i] = gen.Header{Key: h.Key, Value: h.Value}
@@ -201,13 +199,13 @@ func toGenHeadersFromTemplates(in []templates.Header) []gen.Header {
 	return out
 }
 
-func fromGenHeaders(in *[]gen.Header) []profiles.Header {
+func fromGenHeaders(in *[]gen.Header) []deviceprofiles.Header {
 	if in == nil {
 		return nil
 	}
-	out := make([]profiles.Header, len(*in))
+	out := make([]deviceprofiles.Header, len(*in))
 	for i, h := range *in {
-		out[i] = profiles.Header{Key: h.Key, Value: h.Value}
+		out[i] = deviceprofiles.Header{Key: h.Key, Value: h.Value}
 	}
 	return out
 }

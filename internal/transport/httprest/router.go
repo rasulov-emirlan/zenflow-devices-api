@@ -7,22 +7,22 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/auth"
-	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/profiles"
+	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/deviceprofiles"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/templates"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/transport/httprest/gen"
 )
 
 type Deps struct {
-	Logger    *slog.Logger
-	Auth      *auth.Resolver
-	Profiles  *profiles.Service
-	Templates *templates.Service
+	Logger         *slog.Logger
+	Auth           *auth.Resolver
+	DeviceProfiles *deviceprofiles.Service
+	Templates      *templates.Service
 }
 
 // NewRouter wires the generated OpenAPI server into a chi router with project
 // middleware. /healthz is public; everything else requires Basic Auth.
 func NewRouter(d Deps) http.Handler {
-	handlers := &Handlers{profiles: d.Profiles, templates: d.Templates, log: d.Logger}
+	handlers := &Handlers{deviceProfiles: d.DeviceProfiles, templates: d.Templates, log: d.Logger}
 
 	r := chi.NewRouter()
 	r.Use(requestIDMW)

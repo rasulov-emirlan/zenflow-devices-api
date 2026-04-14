@@ -1,4 +1,4 @@
-package profiles
+package deviceprofiles
 
 import (
 	"context"
@@ -11,17 +11,17 @@ import (
 )
 
 type fakeRepo struct {
-	byID     map[string]Profile
+	byID     map[string]DeviceProfile
 	byUserNm map[string]string // userID+"\x00"+name -> id
 }
 
 func newFakeRepo() *fakeRepo {
-	return &fakeRepo{byID: map[string]Profile{}, byUserNm: map[string]string{}}
+	return &fakeRepo{byID: map[string]DeviceProfile{}, byUserNm: map[string]string{}}
 }
 
 func key(userID, name string) string { return userID + "\x00" + name }
 
-func (f *fakeRepo) Insert(_ context.Context, p Profile) error {
+func (f *fakeRepo) Insert(_ context.Context, p DeviceProfile) error {
 	if _, dup := f.byUserNm[key(p.UserID, p.Name)]; dup {
 		return ErrDuplicateName
 	}
@@ -30,16 +30,16 @@ func (f *fakeRepo) Insert(_ context.Context, p Profile) error {
 	return nil
 }
 
-func (f *fakeRepo) GetByID(_ context.Context, userID, id string) (Profile, error) {
+func (f *fakeRepo) GetByID(_ context.Context, userID, id string) (DeviceProfile, error) {
 	p, ok := f.byID[id]
 	if !ok || p.UserID != userID {
-		return Profile{}, ErrNotFound
+		return DeviceProfile{}, ErrNotFound
 	}
 	return p, nil
 }
 
-func (f *fakeRepo) ListByUser(_ context.Context, userID string, page Page) ([]Profile, error) {
-	out := []Profile{}
+func (f *fakeRepo) ListByUser(_ context.Context, userID string, page Page) ([]DeviceProfile, error) {
+	out := []DeviceProfile{}
 	for _, p := range f.byID {
 		if p.UserID == userID {
 			out = append(out, p)
@@ -48,7 +48,7 @@ func (f *fakeRepo) ListByUser(_ context.Context, userID string, page Page) ([]Pr
 	return out, nil
 }
 
-func (f *fakeRepo) Update(_ context.Context, p Profile) error {
+func (f *fakeRepo) Update(_ context.Context, p DeviceProfile) error {
 	existing, ok := f.byID[p.ID]
 	if !ok || existing.UserID != p.UserID {
 		return ErrNotFound
@@ -116,7 +116,7 @@ func TestCreateHappy(t *testing.T) {
 		t.Fatalf("Create: %v", err)
 	}
 	if p.ID == "" || p.UserID != "alice" {
-		t.Fatalf("unexpected profile: %+v", p)
+		t.Fatalf("unexpected device profile: %+v", p)
 	}
 }
 

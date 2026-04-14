@@ -20,10 +20,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
-  /profiles:
+  /device-profiles:
     get:
-      operationId: listProfiles
-      summary: List profiles for the authenticated user
+      operationId: listDeviceProfiles
+      summary: List device profiles for the authenticated user
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Offset'
@@ -33,69 +33,69 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProfileList'
+                $ref: '#/components/schemas/DeviceProfileList'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '500': { $ref: '#/components/responses/InternalError' }
     post:
-      operationId: createProfile
-      summary: Create a new profile
+      operationId: createDeviceProfile
+      summary: Create a new device profile
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateProfileRequest'
+              $ref: '#/components/schemas/CreateDeviceProfileRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Profile'
+                $ref: '#/components/schemas/DeviceProfile'
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '409': { $ref: '#/components/responses/Conflict' }
         '500': { $ref: '#/components/responses/InternalError' }
-  /profiles/{id}:
+  /device-profiles/{id}:
     parameters:
-      - $ref: '#/components/parameters/ProfileID'
+      - $ref: '#/components/parameters/DeviceProfileID'
     get:
-      operationId: getProfile
-      summary: Get a profile by ID
+      operationId: getDeviceProfile
+      summary: Get a device profile by ID
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Profile'
+                $ref: '#/components/schemas/DeviceProfile'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
         '500': { $ref: '#/components/responses/InternalError' }
     patch:
-      operationId: patchProfile
-      summary: Partially update a profile
+      operationId: patchDeviceProfile
+      summary: Partially update a device profile
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchProfileRequest'
+              $ref: '#/components/schemas/PatchDeviceProfileRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Profile'
+                $ref: '#/components/schemas/DeviceProfile'
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
         '500': { $ref: '#/components/responses/InternalError' }
     delete:
-      operationId: deleteProfile
-      summary: Delete a profile
+      operationId: deleteDeviceProfile
+      summary: Delete a device profile
       responses:
         '204': { description: No Content }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -149,7 +149,7 @@ components:
       in: query
       required: false
       schema: { type: integer, minimum: 0, default: 0 }
-    ProfileID:
+    DeviceProfileID:
       name: id
       in: path
       required: true
@@ -201,7 +201,7 @@ components:
       properties:
         key: { type: string }
         value: { type: string }
-    Profile:
+    DeviceProfile:
       type: object
       required:
         - id
@@ -235,14 +235,14 @@ components:
           nullable: true
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
-    ProfileList:
+    DeviceProfileList:
       type: object
       required: [items]
       properties:
         items:
           type: array
-          items: { $ref: '#/components/schemas/Profile' }
-    CreateProfileRequest:
+          items: { $ref: '#/components/schemas/DeviceProfile' }
+    CreateDeviceProfileRequest:
       type: object
       required:
         - name
@@ -267,7 +267,7 @@ components:
         template_slug:
           type: string
           nullable: true
-    PatchProfileRequest:
+    PatchDeviceProfileRequest:
       type: object
       properties:
         name: { type: string }

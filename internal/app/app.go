@@ -14,7 +14,7 @@ import (
 
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/auth"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/config"
-	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/profiles"
+	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/deviceprofiles"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/templates"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/storage/postgresql"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/transport/httprest"
@@ -22,13 +22,13 @@ import (
 )
 
 type App struct {
-	cfg       *config.Config
-	log       *slog.Logger
-	pool      *pgxpool.Pool
-	resolver  *auth.Resolver
-	profiles  *profiles.Service
-	templates *templates.Service
-	server    *http.Server
+	cfg            *config.Config
+	log            *slog.Logger
+	pool           *pgxpool.Pool
+	resolver       *auth.Resolver
+	deviceProfiles *deviceprofiles.Service
+	templates      *templates.Service
+	server         *http.Server
 
 	cleanups []func(context.Context) error
 }
@@ -78,7 +78,7 @@ func (a *App) initLogger(_ context.Context) error {
 }
 
 func (a *App) initDB(ctx context.Context) error {
-	if err := postgresql.Migrate(a.cfg.DatabaseURL); err != nil {
+	if err := postgresql.Migrate(a.cfg.DatabaseURL); err != nil { // TODO: make migrations optional with UP/DOWN separation
 		return fmt.Errorf("migrate: %w", err)
 	}
 	pool, err := postgresql.OpenPool(ctx, a.cfg.DatabaseURL)
@@ -97,18 +97,18 @@ func (a *App) initDomains(_ context.Context) error {
 	tmplRepo := postgresql.NewTemplatesRepo(a.pool)
 	a.templates = templates.NewService(tmplRepo)
 
-	profRepo := postgresql.NewProfilesRepo(a.pool)
-	a.profiles = profiles.NewService(profRepo, a.templates)
+	dpRepo := postgresql.NewDeviceProfilesRepo(a.pool)
+	a.deviceProfiles = deviceprofiles.NewService(dpRepo, a.templates)
 	return nil
 }
 
 //nolint:unparam // see initLogger.
 func (a *App) initHTTP(_ context.Context) error {
 	handler := httprest.NewRouter(httprest.Deps{
-		Logger:    a.log,
-		Auth:      a.resolver,
-		Profiles:  a.profiles,
-		Templates: a.templates,
+		Logger:         a.log,
+		Auth:           a.resolver,
+		DeviceProfiles: a.deviceProfiles,
+		Templates:      a.templates,
 	})
 	a.server = &http.Server{
 		Addr:    a.cfg.Addr(),

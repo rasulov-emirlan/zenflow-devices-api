@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/profiles"
+	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/deviceprofiles"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/templates"
 )
 
@@ -56,13 +56,13 @@ func DecodeBody(r *http.Request, dst any) error {
 // DomainError maps domain errors to HTTP responses. Unknown errors become 500.
 func DomainError(w http.ResponseWriter, log *slog.Logger, err error) {
 	switch {
-	case errors.Is(err, profiles.ErrInvalidInput):
+	case errors.Is(err, deviceprofiles.ErrInvalidInput):
 		Error(w, http.StatusBadRequest, "invalid_input", err.Error())
-	case errors.Is(err, profiles.ErrDuplicateName):
-		Error(w, http.StatusConflict, "duplicate_name", "a profile with this name already exists")
-	case errors.Is(err, profiles.ErrNotFound), errors.Is(err, templates.ErrNotFound):
+	case errors.Is(err, deviceprofiles.ErrDuplicateName):
+		Error(w, http.StatusConflict, "duplicate_name", "a device profile with this name already exists")
+	case errors.Is(err, deviceprofiles.ErrNotFound), errors.Is(err, templates.ErrNotFound):
 		Error(w, http.StatusNotFound, "not_found", "resource not found")
-	case errors.Is(err, profiles.ErrTemplate):
+	case errors.Is(err, deviceprofiles.ErrTemplate):
 		Error(w, http.StatusBadRequest, "template_error", err.Error())
 	default:
 		if log != nil {

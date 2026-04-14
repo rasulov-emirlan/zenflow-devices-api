@@ -20,13 +20,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/auth"
-	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/profiles"
+	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/deviceprofiles"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/templates"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/storage/postgresql"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/transport/httprest"
 )
 
-func TestProfilesEndToEnd(t *testing.T) {
+func TestDeviceProfilesEndToEnd(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 
@@ -62,13 +62,13 @@ func TestProfilesEndToEnd(t *testing.T) {
 	resolver := auth.NewResolver(map[string]string{"alice": string(hash), "bob": string(hash)})
 
 	tmplSvc := templates.NewService(postgresql.NewTemplatesRepo(pool))
-	profSvc := profiles.NewService(postgresql.NewProfilesRepo(pool), tmplSvc)
+	dpSvc := deviceprofiles.NewService(postgresql.NewDeviceProfilesRepo(pool), tmplSvc)
 
 	handler := httprest.NewRouter(httprest.Deps{
-		Logger:    slog.New(slog.NewTextHandler(io.Discard, nil)),
-		Auth:      resolver,
-		Profiles:  profSvc,
-		Templates: tmplSvc,
+		Logger:         slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Auth:           resolver,
+		DeviceProfiles: dpSvc,
+		Templates:      tmplSvc,
 	})
 	srv := httptest.NewServer(handler)
 	t.Cleanup(srv.Close)
@@ -86,7 +86,7 @@ func TestProfilesEndToEnd(t *testing.T) {
 	}
 
 	t.Run("401 without auth", func(t *testing.T) {
-		resp := do(t, srv.URL, http.MethodPost, "/profiles", body, "", "")
+		resp := do(t, srv.URL, http.MethodPost, "/device-profiles", body, "", "")
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusUnauthorized {
 			t.Fatalf("status = %d", resp.StatusCode)
@@ -95,7 +95,7 @@ func TestProfilesEndToEnd(t *testing.T) {
 
 	var createdID string
 	t.Run("201 happy path", func(t *testing.T) {
-		resp := do(t, srv.URL, http.MethodPost, "/profiles", body, "alice", "secret")
+		resp := do(t, srv.URL, http.MethodPost, "/device-profiles", body, "alice", "secret")
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusCreated {
 			t.Fatalf("status = %d, body=%s", resp.StatusCode, readBody(resp))
@@ -114,7 +114,7 @@ func TestProfilesEndToEnd(t *testing.T) {
 	})
 
 	t.Run("409 duplicate name", func(t *testing.T) {
-		resp := do(t, srv.URL, http.MethodPost, "/profiles", body, "alice", "secret")
+		resp := do(t, srv.URL, http.MethodPost, "/device-profiles", body, "alice", "secret")
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusConflict {
 			t.Fatalf("status = %d", resp.StatusCode)
@@ -127,7 +127,7 @@ func TestProfilesEndToEnd(t *testing.T) {
 			"window_width": 1920, "window_height": 1080,
 			"user_agent": "ua", "country_code": "usa",
 		}
-		resp := do(t, srv.URL, http.MethodPost, "/profiles", bad, "alice", "secret")
+		resp := do(t, srv.URL, http.MethodPost, "/device-profiles", bad, "alice", "secret")
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusBadRequest {
 			t.Fatalf("status = %d", resp.StatusCode)
@@ -135,7 +135,7 @@ func TestProfilesEndToEnd(t *testing.T) {
 	})
 
 	t.Run("404 cross-user isolation", func(t *testing.T) {
-		resp := do(t, srv.URL, http.MethodGet, "/profiles/"+createdID, nil, "bob", "secret")
+		resp := do(t, srv.URL, http.MethodGet, "/device-profiles/"+createdID, nil, "bob", "secret")
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusNotFound {
 			t.Fatalf("status = %d", resp.StatusCode)
@@ -163,7 +163,7 @@ func TestProfilesEndToEnd(t *testing.T) {
 			"name":          "phone-profile",
 			"template_slug": slug,
 		}
-		resp := do(t, srv.URL, http.MethodPost, "/profiles", req, "alice", "secret")
+		resp := do(t, srv.URL, http.MethodPost, "/device-profiles", req, "alice", "secret")
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusCreated {
 			t.Fatalf("status = %d, body=%s", resp.StatusCode, readBody(resp))

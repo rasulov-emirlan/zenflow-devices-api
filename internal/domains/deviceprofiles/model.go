@@ -1,6 +1,6 @@
-// Package profiles is the device-profile domain: pure Go business logic
+// Package deviceprofiles is the device-profile domain: pure Go business logic
 // wired to storage and transport through the Repo port.
-package profiles
+package deviceprofiles
 
 import (
 	"errors"
@@ -24,7 +24,7 @@ type Header struct {
 	Value string
 }
 
-type Profile struct {
+type DeviceProfile struct {
 	ID            string
 	UserID        string
 	Name          string
@@ -88,7 +88,7 @@ const (
 
 var countryRE = regexp.MustCompile(`^[A-Z]{2}$`)
 
-func (p Profile) Validate() error {
+func (p DeviceProfile) Validate() error {
 	return validateFields(p.Name, p.DeviceType, p.WindowWidth, p.WindowHeight, p.UserAgent, p.CountryCode, p.CustomHeaders)
 }
 

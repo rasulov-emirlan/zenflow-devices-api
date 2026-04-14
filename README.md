@@ -28,7 +28,7 @@ curl http://localhost:8080/healthz
 curl -u alice:secret http://localhost:8080/templates
 
 # create a profile from scratch
-curl -u alice:secret -X POST http://localhost:8080/profiles \
+curl -u alice:secret -X POST http://localhost:8080/device-profiles \
   -H 'Content-Type: application/json' \
   -d '{
     "name": "my-desktop",
@@ -41,19 +41,19 @@ curl -u alice:secret -X POST http://localhost:8080/profiles \
   }'
 
 # create from a template (overrides win)
-curl -u alice:secret -X POST http://localhost:8080/profiles \
+curl -u alice:secret -X POST http://localhost:8080/device-profiles \
   -H 'Content-Type: application/json' \
   -d '{"name":"phone-br","template_slug":"mobile-iphone-us","country_code":"BR"}'
 
 # list own profiles
-curl -u alice:secret http://localhost:8080/profiles
+curl -u alice:secret http://localhost:8080/device-profiles
 
 # patch
-curl -u alice:secret -X PATCH http://localhost:8080/profiles/<id> \
+curl -u alice:secret -X PATCH http://localhost:8080/device-profiles/<id> \
   -H 'Content-Type: application/json' -d '{"window_width":800}'
 
 # delete
-curl -u alice:secret -X DELETE http://localhost:8080/profiles/<id>
+curl -u alice:secret -X DELETE http://localhost:8080/device-profiles/<id>
 ```
 
 ### Local (with Postgres running somewhere)
@@ -81,11 +81,11 @@ All endpoints except `/healthz` require HTTP Basic credentials.
 | Method | Path                | Purpose                                        |
 |--------|---------------------|------------------------------------------------|
 | GET    | `/healthz`          | Liveness (unauthenticated)                     |
-| POST   | `/profiles`         | Create (optionally `template_slug` to prefill) |
-| GET    | `/profiles`         | List caller's profiles (`?limit`, `?offset`)   |
-| GET    | `/profiles/{id}`    | Get one (404 if not owned — no existence leak) |
-| PATCH  | `/profiles/{id}`    | Partial update                                 |
-| DELETE | `/profiles/{id}`    | Delete                                         |
+| POST   | `/device-profiles`         | Create (optionally `template_slug` to prefill) |
+| GET    | `/device-profiles`         | List caller's profiles (`?limit`, `?offset`)   |
+| GET    | `/device-profiles/{id}`    | Get one (404 if not owned — no existence leak) |
+| PATCH  | `/device-profiles/{id}`    | Partial update                                 |
+| DELETE | `/device-profiles/{id}`    | Delete                                         |
 | GET    | `/templates`        | List predefined templates                      |
 | GET    | `/templates/{slug}` | Get one template                               |
 
@@ -105,7 +105,7 @@ cmd/api            → thin entry point
 internal/app       → bootstrap: App struct with init steps, LIFO cleanups
 internal/config    → env parsing
 internal/auth      → transport-agnostic credential resolver (bcrypt)
-internal/domains/  → PURE: profiles, templates (models, errors, Repo interfaces, services)
+internal/domains/  → PURE: deviceprofiles, templates (models, errors, Repo interfaces, services)
 internal/transport → adapters grouped by kind
   └─ httprest/     → chi router, middleware, handlers, DTOs, error mapping
 internal/storage/  → adapters grouped by kind
@@ -160,7 +160,7 @@ package. Swapping to JWT/OAuth later is additive.
   (1.22+) was considered; chi won on URL params and ergonomics.
 - **pgx/v5** — best-in-class Postgres driver, native JSONB, no ORM overhead.
 - **hand-rolled validation** — the ruleset is small (6 rules) and lives where it
-  matters: on the domain object (`Profile.Validate()`). Avoids a heavy validator
+  matters: on the domain object (`DeviceProfile.Validate()`). Avoids a heavy validator
   dep, keeps error messages explicit, and domain tests exercise it directly.
 - **golang-migrate** with `iofs` source — migrations embedded into the binary via
   `go:embed`, so deploys don’t need a separate migrations copy.
@@ -203,13 +203,13 @@ htpasswd -bnBC 10 "" secret | tr -d ':\n'
 
 ## Testing approach
 
-- **Unit (`internal/domains/profiles/service_test.go`)** — the service is tested
+- **Unit (`internal/domains/deviceprofiles/service_test.go`)** — the service is tested
   against an inline fake repo. Covers: validation, template merge + overrides,
   ownership enforcement, duplicate-name rejection, patch merge + revalidation.
   Pure Go, no Docker.
 - **Integration (`test/integration_test.go`, tag `integration`)** — spins up
   Postgres via `testcontainers-go/modules/postgres`, runs migrations, wires the
-  real HTTP stack, and exercises `POST /profiles` happy path + 401 + 409 + 400 +
+  real HTTP stack, and exercises `POST /device-profiles` happy path + 401 + 409 + 400 +
   cross-user 404 + template creation. Asserts the seed templates are present.
 
 ---
@@ -221,7 +221,7 @@ htpasswd -bnBC 10 "" secret | tr -d ':\n'
 - **OAuth/JWT** replacing Basic auth — isolated to `internal/auth` + a new middleware.
 - **Cursor pagination** instead of `limit/offset` once profile counts grow.
 - **Structured audit log** of write operations (who/what/when).
-- **Template catalog expansion** + a `/profiles/{id}/validate` endpoint that
+- **Template catalog expansion** + a `/device-profiles/{id}/validate` endpoint that
   simulates a request shape before persistence.
 - **CI** — GitHub Actions matrix: `go test ./...` + `go test -tags=integration`.
 - **Profile versioning** — `schema_version` on JSONB so migrations can safely

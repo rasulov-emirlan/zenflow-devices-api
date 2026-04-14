@@ -35,8 +35,8 @@ func (e DeviceType) Valid() bool {
 	}
 }
 
-// CreateProfileRequest defines model for CreateProfileRequest.
-type CreateProfileRequest struct {
+// CreateDeviceProfileRequest defines model for CreateDeviceProfileRequest.
+type CreateDeviceProfileRequest struct {
 	CountryCode   string                  `json:"country_code"`
 	CustomHeaders *[]Header               `json:"custom_headers,omitempty"`
 	DeviceType    DeviceType              `json:"device_type"`
@@ -46,6 +46,28 @@ type CreateProfileRequest struct {
 	UserAgent     string                  `json:"user_agent"`
 	WindowHeight  int                     `json:"window_height"`
 	WindowWidth   int                     `json:"window_width"`
+}
+
+// DeviceProfile defines model for DeviceProfile.
+type DeviceProfile struct {
+	CountryCode   string                  `json:"country_code"`
+	CreatedAt     time.Time               `json:"created_at"`
+	CustomHeaders []Header                `json:"custom_headers"`
+	DeviceType    DeviceType              `json:"device_type"`
+	Extra         *map[string]interface{} `json:"extra,omitempty"`
+	Id            string                  `json:"id"`
+	Name          string                  `json:"name"`
+	TemplateSlug  *string                 `json:"template_slug,omitempty"`
+	UpdatedAt     time.Time               `json:"updated_at"`
+	UserAgent     string                  `json:"user_agent"`
+	UserId        string                  `json:"user_id"`
+	WindowHeight  int                     `json:"window_height"`
+	WindowWidth   int                     `json:"window_width"`
+}
+
+// DeviceProfileList defines model for DeviceProfileList.
+type DeviceProfileList struct {
+	Items []DeviceProfile `json:"items"`
 }
 
 // DeviceType defines model for DeviceType.
@@ -68,8 +90,8 @@ type HealthResponse struct {
 	Status string `json:"status"`
 }
 
-// PatchProfileRequest defines model for PatchProfileRequest.
-type PatchProfileRequest struct {
+// PatchDeviceProfileRequest defines model for PatchDeviceProfileRequest.
+type PatchDeviceProfileRequest struct {
 	CountryCode   *string                 `json:"country_code,omitempty"`
 	CustomHeaders *[]Header               `json:"custom_headers,omitempty"`
 	DeviceType    *DeviceType             `json:"device_type,omitempty"`
@@ -78,28 +100,6 @@ type PatchProfileRequest struct {
 	UserAgent     *string                 `json:"user_agent,omitempty"`
 	WindowHeight  *int                    `json:"window_height,omitempty"`
 	WindowWidth   *int                    `json:"window_width,omitempty"`
-}
-
-// Profile defines model for Profile.
-type Profile struct {
-	CountryCode   string                  `json:"country_code"`
-	CreatedAt     time.Time               `json:"created_at"`
-	CustomHeaders []Header                `json:"custom_headers"`
-	DeviceType    DeviceType              `json:"device_type"`
-	Extra         *map[string]interface{} `json:"extra,omitempty"`
-	Id            string                  `json:"id"`
-	Name          string                  `json:"name"`
-	TemplateSlug  *string                 `json:"template_slug,omitempty"`
-	UpdatedAt     time.Time               `json:"updated_at"`
-	UserAgent     string                  `json:"user_agent"`
-	UserId        string                  `json:"user_id"`
-	WindowHeight  int                     `json:"window_height"`
-	WindowWidth   int                     `json:"window_width"`
-}
-
-// ProfileList defines model for ProfileList.
-type ProfileList struct {
-	Items []Profile `json:"items"`
 }
 
 // Template defines model for Template.
@@ -119,14 +119,14 @@ type TemplateList struct {
 	Items []Template `json:"items"`
 }
 
+// DeviceProfileID defines model for DeviceProfileID.
+type DeviceProfileID = string
+
 // Limit defines model for Limit.
 type Limit = int
 
 // Offset defines model for Offset.
 type Offset = int
-
-// ProfileID defines model for ProfileID.
-type ProfileID = string
 
 // BadRequest defines model for BadRequest.
 type BadRequest = Error
@@ -143,38 +143,38 @@ type NotFound = Error
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
 
-// ListProfilesParams defines parameters for ListProfiles.
-type ListProfilesParams struct {
+// ListDeviceProfilesParams defines parameters for ListDeviceProfiles.
+type ListDeviceProfilesParams struct {
 	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
 	Offset *Offset `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
-// CreateProfileJSONRequestBody defines body for CreateProfile for application/json ContentType.
-type CreateProfileJSONRequestBody = CreateProfileRequest
+// CreateDeviceProfileJSONRequestBody defines body for CreateDeviceProfile for application/json ContentType.
+type CreateDeviceProfileJSONRequestBody = CreateDeviceProfileRequest
 
-// PatchProfileJSONRequestBody defines body for PatchProfile for application/json ContentType.
-type PatchProfileJSONRequestBody = PatchProfileRequest
+// PatchDeviceProfileJSONRequestBody defines body for PatchDeviceProfile for application/json ContentType.
+type PatchDeviceProfileJSONRequestBody = PatchDeviceProfileRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// List device profiles for the authenticated user
+	// (GET /device-profiles)
+	ListDeviceProfiles(w http.ResponseWriter, r *http.Request, params ListDeviceProfilesParams)
+	// Create a new device profile
+	// (POST /device-profiles)
+	CreateDeviceProfile(w http.ResponseWriter, r *http.Request)
+	// Delete a device profile
+	// (DELETE /device-profiles/{id})
+	DeleteDeviceProfile(w http.ResponseWriter, r *http.Request, id DeviceProfileID)
+	// Get a device profile by ID
+	// (GET /device-profiles/{id})
+	GetDeviceProfile(w http.ResponseWriter, r *http.Request, id DeviceProfileID)
+	// Partially update a device profile
+	// (PATCH /device-profiles/{id})
+	PatchDeviceProfile(w http.ResponseWriter, r *http.Request, id DeviceProfileID)
 	// Health check
 	// (GET /healthz)
 	GetHealth(w http.ResponseWriter, r *http.Request)
-	// List profiles for the authenticated user
-	// (GET /profiles)
-	ListProfiles(w http.ResponseWriter, r *http.Request, params ListProfilesParams)
-	// Create a new profile
-	// (POST /profiles)
-	CreateProfile(w http.ResponseWriter, r *http.Request)
-	// Delete a profile
-	// (DELETE /profiles/{id})
-	DeleteProfile(w http.ResponseWriter, r *http.Request, id ProfileID)
-	// Get a profile by ID
-	// (GET /profiles/{id})
-	GetProfile(w http.ResponseWriter, r *http.Request, id ProfileID)
-	// Partially update a profile
-	// (PATCH /profiles/{id})
-	PatchProfile(w http.ResponseWriter, r *http.Request, id ProfileID)
 	// List all templates
 	// (GET /templates)
 	ListTemplates(w http.ResponseWriter, r *http.Request)
@@ -187,39 +187,39 @@ type ServerInterface interface {
 
 type Unimplemented struct{}
 
+// List device profiles for the authenticated user
+// (GET /device-profiles)
+func (_ Unimplemented) ListDeviceProfiles(w http.ResponseWriter, r *http.Request, params ListDeviceProfilesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create a new device profile
+// (POST /device-profiles)
+func (_ Unimplemented) CreateDeviceProfile(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete a device profile
+// (DELETE /device-profiles/{id})
+func (_ Unimplemented) DeleteDeviceProfile(w http.ResponseWriter, r *http.Request, id DeviceProfileID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get a device profile by ID
+// (GET /device-profiles/{id})
+func (_ Unimplemented) GetDeviceProfile(w http.ResponseWriter, r *http.Request, id DeviceProfileID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Partially update a device profile
+// (PATCH /device-profiles/{id})
+func (_ Unimplemented) PatchDeviceProfile(w http.ResponseWriter, r *http.Request, id DeviceProfileID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Health check
 // (GET /healthz)
 func (_ Unimplemented) GetHealth(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// List profiles for the authenticated user
-// (GET /profiles)
-func (_ Unimplemented) ListProfiles(w http.ResponseWriter, r *http.Request, params ListProfilesParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Create a new profile
-// (POST /profiles)
-func (_ Unimplemented) CreateProfile(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Delete a profile
-// (DELETE /profiles/{id})
-func (_ Unimplemented) DeleteProfile(w http.ResponseWriter, r *http.Request, id ProfileID) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Get a profile by ID
-// (GET /profiles/{id})
-func (_ Unimplemented) GetProfile(w http.ResponseWriter, r *http.Request, id ProfileID) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Partially update a profile
-// (PATCH /profiles/{id})
-func (_ Unimplemented) PatchProfile(w http.ResponseWriter, r *http.Request, id ProfileID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -244,22 +244,8 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
-// GetHealth operation middleware
-func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Request) {
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetHealth(w, r)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// ListProfiles operation middleware
-func (siw *ServerInterfaceWrapper) ListProfiles(w http.ResponseWriter, r *http.Request) {
+// ListDeviceProfiles operation middleware
+func (siw *ServerInterfaceWrapper) ListDeviceProfiles(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
@@ -270,7 +256,7 @@ func (siw *ServerInterfaceWrapper) ListProfiles(w http.ResponseWriter, r *http.R
 	r = r.WithContext(ctx)
 
 	// Parameter object where we will unmarshal all parameters from the context
-	var params ListProfilesParams
+	var params ListDeviceProfilesParams
 
 	// ------------- Optional query parameter "limit" -------------
 
@@ -289,7 +275,7 @@ func (siw *ServerInterfaceWrapper) ListProfiles(w http.ResponseWriter, r *http.R
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListProfiles(w, r, params)
+		siw.Handler.ListDeviceProfiles(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -299,8 +285,8 @@ func (siw *ServerInterfaceWrapper) ListProfiles(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
-// CreateProfile operation middleware
-func (siw *ServerInterfaceWrapper) CreateProfile(w http.ResponseWriter, r *http.Request) {
+// CreateDeviceProfile operation middleware
+func (siw *ServerInterfaceWrapper) CreateDeviceProfile(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
@@ -309,7 +295,7 @@ func (siw *ServerInterfaceWrapper) CreateProfile(w http.ResponseWriter, r *http.
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.CreateProfile(w, r)
+		siw.Handler.CreateDeviceProfile(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -319,13 +305,13 @@ func (siw *ServerInterfaceWrapper) CreateProfile(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
-// DeleteProfile operation middleware
-func (siw *ServerInterfaceWrapper) DeleteProfile(w http.ResponseWriter, r *http.Request) {
+// DeleteDeviceProfile operation middleware
+func (siw *ServerInterfaceWrapper) DeleteDeviceProfile(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
 	// ------------- Path parameter "id" -------------
-	var id ProfileID
+	var id DeviceProfileID
 
 	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
 	if err != nil {
@@ -340,7 +326,7 @@ func (siw *ServerInterfaceWrapper) DeleteProfile(w http.ResponseWriter, r *http.
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DeleteProfile(w, r, id)
+		siw.Handler.DeleteDeviceProfile(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -350,13 +336,13 @@ func (siw *ServerInterfaceWrapper) DeleteProfile(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
-// GetProfile operation middleware
-func (siw *ServerInterfaceWrapper) GetProfile(w http.ResponseWriter, r *http.Request) {
+// GetDeviceProfile operation middleware
+func (siw *ServerInterfaceWrapper) GetDeviceProfile(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
 	// ------------- Path parameter "id" -------------
-	var id ProfileID
+	var id DeviceProfileID
 
 	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
 	if err != nil {
@@ -371,7 +357,7 @@ func (siw *ServerInterfaceWrapper) GetProfile(w http.ResponseWriter, r *http.Req
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetProfile(w, r, id)
+		siw.Handler.GetDeviceProfile(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -381,13 +367,13 @@ func (siw *ServerInterfaceWrapper) GetProfile(w http.ResponseWriter, r *http.Req
 	handler.ServeHTTP(w, r)
 }
 
-// PatchProfile operation middleware
-func (siw *ServerInterfaceWrapper) PatchProfile(w http.ResponseWriter, r *http.Request) {
+// PatchDeviceProfile operation middleware
+func (siw *ServerInterfaceWrapper) PatchDeviceProfile(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
 	// ------------- Path parameter "id" -------------
-	var id ProfileID
+	var id DeviceProfileID
 
 	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
 	if err != nil {
@@ -402,7 +388,21 @@ func (siw *ServerInterfaceWrapper) PatchProfile(w http.ResponseWriter, r *http.R
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PatchProfile(w, r, id)
+		siw.Handler.PatchDeviceProfile(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetHealth operation middleware
+func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetHealth(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -577,22 +577,22 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/device-profiles", wrapper.ListDeviceProfiles)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/device-profiles", wrapper.CreateDeviceProfile)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/device-profiles/{id}", wrapper.DeleteDeviceProfile)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/device-profiles/{id}", wrapper.GetDeviceProfile)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/device-profiles/{id}", wrapper.PatchDeviceProfile)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/healthz", wrapper.GetHealth)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/profiles", wrapper.ListProfiles)
-	})
-	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/profiles", wrapper.CreateProfile)
-	})
-	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/profiles/{id}", wrapper.DeleteProfile)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/profiles/{id}", wrapper.GetProfile)
-	})
-	r.Group(func(r chi.Router) {
-		r.Patch(options.BaseURL+"/profiles/{id}", wrapper.PatchProfile)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/templates", wrapper.ListTemplates)

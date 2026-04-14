@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS templates (
   custom_headers JSONB NOT NULL DEFAULT '[]'::jsonb
 );
 
-CREATE TABLE IF NOT EXISTS profiles (
+CREATE TABLE IF NOT EXISTS device_profiles (
   id             UUID PRIMARY KEY,
   user_id        TEXT NOT NULL,
   name           TEXT NOT NULL,
@@ -26,4 +26,4 @@ CREATE TABLE IF NOT EXISTS profiles (
   UNIQUE (user_id, name)
 );
 
-CREATE INDEX IF NOT EXISTS profiles_user_idx ON profiles(user_id);
+CREATE INDEX IF NOT EXISTS device_profiles_user_idx ON device_profiles(user_id);

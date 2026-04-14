@@ -1,4 +1,4 @@
-package profiles
+package deviceprofiles
 
 import (
 	"context"
@@ -10,9 +10,9 @@ import (
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/templates"
 )
 
-// TemplateLookup is the narrow seam into the templates domain — the profile
-// service only needs Get, so it depends on an interface rather than the concrete
-// service, which keeps testing and future splits simple.
+// TemplateLookup is the narrow seam into the templates domain — the device
+// profile service only needs Get, so it depends on an interface rather than
+// the concrete service, which keeps testing and future splits simple.
 type TemplateLookup interface {
 	Get(ctx context.Context, slug string) (templates.Template, error)
 }
@@ -33,18 +33,18 @@ func NewService(repo Repo, tmpl TemplateLookup) *Service {
 	}
 }
 
-func (s *Service) Create(ctx context.Context, userID string, in Input) (Profile, error) {
+func (s *Service) Create(ctx context.Context, userID string, in Input) (DeviceProfile, error) {
 	if userID == "" {
-		return Profile{}, fmt.Errorf("%w: user_id required", ErrInvalidInput)
+		return DeviceProfile{}, fmt.Errorf("%w: user_id required", ErrInvalidInput)
 	}
 	if in.TemplateSlug != nil {
 		t, err := s.templates.Get(ctx, *in.TemplateSlug)
 		if err != nil {
-			return Profile{}, fmt.Errorf("%w: %w", ErrTemplate, err)
+			return DeviceProfile{}, fmt.Errorf("%w: %w", ErrTemplate, err)
 		}
 		applyTemplate(&in, t)
 	}
-	p := Profile{
+	p := DeviceProfile{
 		ID:            s.newID(),
 		UserID:        userID,
 		Name:          in.Name,
@@ -60,34 +60,34 @@ func (s *Service) Create(ctx context.Context, userID string, in Input) (Profile,
 		UpdatedAt:     s.now(),
 	}
 	if err := p.Validate(); err != nil {
-		return Profile{}, err
+		return DeviceProfile{}, err
 	}
 	if err := s.repo.Insert(ctx, p); err != nil {
-		return Profile{}, err
+		return DeviceProfile{}, err
 	}
 	return p, nil
 }
 
-func (s *Service) Get(ctx context.Context, userID, id string) (Profile, error) {
+func (s *Service) Get(ctx context.Context, userID, id string) (DeviceProfile, error) {
 	return s.repo.GetByID(ctx, userID, id)
 }
 
-func (s *Service) List(ctx context.Context, userID string, page Page) ([]Profile, error) {
+func (s *Service) List(ctx context.Context, userID string, page Page) ([]DeviceProfile, error) {
 	return s.repo.ListByUser(ctx, userID, page.Normalize())
 }
 
-func (s *Service) Patch(ctx context.Context, userID, id string, patch Patch) (Profile, error) {
+func (s *Service) Patch(ctx context.Context, userID, id string, patch Patch) (DeviceProfile, error) {
 	current, err := s.repo.GetByID(ctx, userID, id)
 	if err != nil {
-		return Profile{}, err
+		return DeviceProfile{}, err
 	}
 	applyPatch(&current, patch)
 	current.UpdatedAt = s.now()
 	if err := current.Validate(); err != nil {
-		return Profile{}, err
+		return DeviceProfile{}, err
 	}
 	if err := s.repo.Update(ctx, current); err != nil {
-		return Profile{}, err
+		return DeviceProfile{}, err
 	}
 	return current, nil
 }
@@ -126,7 +126,7 @@ func applyTemplate(in *Input, t templates.Template) {
 	}
 }
 
-func applyPatch(p *Profile, patch Patch) {
+func applyPatch(p *DeviceProfile, patch Patch) {
 	if patch.Name != nil {
 		p.Name = *patch.Name
 	}
