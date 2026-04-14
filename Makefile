@@ -1,5 +1,6 @@
 .PHONY: run test tidy build up down generate lint-spec \
-	migrate-up migrate-down migrate-version migrate-create seed-run
+	migrate-up migrate-down migrate-version migrate-create seed-run \
+	observe-up observe-down
 
 MIGRATIONS_DIR := internal/storage/postgresql/migrations
 
@@ -22,10 +23,16 @@ build:
 	go build -o bin/api ./cmd/api
 
 up:
-	docker compose up --build
+	docker compose up --build -d postgres api prometheus grafana tempo otel-collector
 
 down:
 	docker compose down -v
+
+observe-up:
+	docker compose up -d prometheus grafana tempo otel-collector
+
+observe-down:
+	docker compose stop prometheus grafana tempo otel-collector
 
 migrate-up:
 	go run ./cmd/migrate up
