@@ -35,7 +35,7 @@ func (h *Handlers) ListDeviceProfiles(w http.ResponseWriter, r *http.Request, pa
 	}
 	items, err := h.deviceProfiles.List(r.Context(), UserID(r.Context()), page)
 	if err != nil {
-		respond.DomainError(w, h.log, err)
+		respond.DomainErrorCtx(r.Context(), w, h.log, err)
 		return
 	}
 	out := make([]gen.DeviceProfile, len(items))
@@ -67,7 +67,7 @@ func (h *Handlers) CreateDeviceProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	p, err := h.deviceProfiles.Create(r.Context(), UserID(r.Context()), in)
 	if err != nil {
-		respond.DomainError(w, h.log, err)
+		respond.DomainErrorCtx(r.Context(), w, h.log, err)
 		return
 	}
 	respond.JSON(w, http.StatusCreated, toGenDeviceProfile(p))
@@ -77,7 +77,7 @@ func (h *Handlers) CreateDeviceProfile(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) GetDeviceProfile(w http.ResponseWriter, r *http.Request, id gen.DeviceProfileID) {
 	p, err := h.deviceProfiles.Get(r.Context(), UserID(r.Context()), id)
 	if err != nil {
-		respond.DomainError(w, h.log, err)
+		respond.DomainErrorCtx(r.Context(), w, h.log, err)
 		return
 	}
 	respond.JSON(w, http.StatusOK, toGenDeviceProfile(p))
@@ -108,7 +108,7 @@ func (h *Handlers) PatchDeviceProfile(w http.ResponseWriter, r *http.Request, id
 	}
 	p, err := h.deviceProfiles.Patch(r.Context(), UserID(r.Context()), id, patch)
 	if err != nil {
-		respond.DomainError(w, h.log, err)
+		respond.DomainErrorCtx(r.Context(), w, h.log, err)
 		return
 	}
 	respond.JSON(w, http.StatusOK, toGenDeviceProfile(p))
@@ -117,7 +117,7 @@ func (h *Handlers) PatchDeviceProfile(w http.ResponseWriter, r *http.Request, id
 // DeleteDeviceProfile implements DELETE /device-profiles/{id}.
 func (h *Handlers) DeleteDeviceProfile(w http.ResponseWriter, r *http.Request, id gen.DeviceProfileID) {
 	if err := h.deviceProfiles.Delete(r.Context(), UserID(r.Context()), id); err != nil {
-		respond.DomainError(w, h.log, err)
+		respond.DomainErrorCtx(r.Context(), w, h.log, err)
 		return
 	}
 	respond.NoContent(w)
@@ -127,7 +127,7 @@ func (h *Handlers) DeleteDeviceProfile(w http.ResponseWriter, r *http.Request, i
 func (h *Handlers) ListTemplates(w http.ResponseWriter, r *http.Request) {
 	items, err := h.templates.List(r.Context())
 	if err != nil {
-		respond.DomainError(w, h.log, err)
+		respond.DomainErrorCtx(r.Context(), w, h.log, err)
 		return
 	}
 	out := make([]gen.Template, len(items))
@@ -141,7 +141,7 @@ func (h *Handlers) ListTemplates(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) GetTemplate(w http.ResponseWriter, r *http.Request, slug string) {
 	t, err := h.templates.Get(r.Context(), slug)
 	if err != nil {
-		respond.DomainError(w, h.log, err)
+		respond.DomainErrorCtx(r.Context(), w, h.log, err)
 		return
 	}
 	respond.JSON(w, http.StatusOK, toGenTemplate(t))
