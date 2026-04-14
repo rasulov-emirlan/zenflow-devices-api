@@ -193,11 +193,51 @@ currency between layers; each adapter translates at its edge (pg `23505` →
 | `DATABASE_URL`      | —       | required, pgx-compatible |
 | `LOG_LEVEL`         | `info`  | `debug` / `info` / `warn` / `error` |
 | `BASIC_AUTH_USERS`  | —       | required, `user1:bcrypt_hash1,user2:bcrypt_hash2` |
+| `APP_ENV`           | `dev`   | `dev` / `staging` / `prod` |
+| `MIGRATE_MODE`      | `auto` in dev/staging, `off` in prod | `auto` / `manual` / `off`. `auto` is rejected in prod. |
 
 Generate a bcrypt hash:
 ```bash
 htpasswd -bnBC 10 "" secret | tr -d ':\n'
 ```
+
+---
+
+## Migrations
+
+Schema migrations live in `internal/storage/postgresql/migrations/` as paired
+`.up.sql` / `.down.sql` files and are embedded into every binary via `go:embed`.
+`golang-migrate` drives execution; an internal `Migrator` type wraps it with a
+focused API (`Up`, `Down`, `Version`, `Force`, `HasPending`).
+
+### On boot (app)
+
+`MIGRATE_MODE` decides what `initDB` does:
+
+- `auto` — apply all pending ups. Default in `dev`/`staging`. Rejected in `prod`.
+- `manual` — fail fast if any pending migration is detected; operator must run
+  the CLI.
+- `off` — skip entirely. Default in `prod`.
+
+### CLI (`cmd/migrate`)
+
+```bash
+DATABASE_URL=postgres://... go run ./cmd/migrate up        # apply all pending
+DATABASE_URL=postgres://... go run ./cmd/migrate down 1    # roll back N (blocked in prod)
+DATABASE_URL=postgres://... go run ./cmd/migrate force 1   # clear dirty flag at version
+DATABASE_URL=postgres://... go run ./cmd/migrate version   # print current version/dirty
+```
+
+Makefile shortcuts:
+
+```bash
+make migrate-up
+make migrate-down N=1
+make migrate-version
+make migrate-create NAME=add_index_on_foo   # scaffolds next-numbered .up.sql + .down.sql
+```
+
+`down` is hard-blocked when `APP_ENV=prod`.
 
 ---
 

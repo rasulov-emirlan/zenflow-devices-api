@@ -4,12 +4,8 @@ package postgresql
 import (
 	"context"
 	"embed"
-	"errors"
 	"fmt"
 
-	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
-	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -32,20 +28,15 @@ func OpenPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
+// Migrate runs all pending up migrations. Thin convenience wrapper around
+// Migrator for callers (e.g. tests) that want a one-shot apply.
 func Migrate(dsn string) error {
-	src, err := iofs.New(migrationsFS, "migrations")
+	mg, err := NewMigrator(dsn)
 	if err != nil {
-		return fmt.Errorf("migrate source: %w", err)
+		return err
 	}
-	m, err := migrate.NewWithSourceInstance("iofs", src, "pgx5://"+trimScheme(dsn))
-	if err != nil {
-		return fmt.Errorf("migrate init: %w", err)
-	}
-	defer func() { _, _ = m.Close() }()
-	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		return fmt.Errorf("migrate up: %w", err)
-	}
-	return nil
+	defer func() { _ = mg.Close() }()
+	return mg.Up()
 }
 
 // trimScheme strips the postgres:// prefix so callers can re-prefix with pgx5://,

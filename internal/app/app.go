@@ -78,8 +78,8 @@ func (a *App) initLogger(_ context.Context) error {
 }
 
 func (a *App) initDB(ctx context.Context) error {
-	if err := postgresql.Migrate(a.cfg.DatabaseURL); err != nil { // TODO: make migrations optional with UP/DOWN separation
-		return fmt.Errorf("migrate: %w", err)
+	if err := a.runMigrations(); err != nil {
+		return err
 	}
 	pool, err := postgresql.OpenPool(ctx, a.cfg.DatabaseURL)
 	if err != nil {
@@ -88,6 +88,42 @@ func (a *App) initDB(ctx context.Context) error {
 	a.pool = pool
 	a.addCleanup(func(context.Context) error { pool.Close(); return nil })
 	return nil
+}
+
+// runMigrations applies the configured MigrateMode policy. Kept separate so
+// the three branches read cleanly and the initDB body stays small.
+func (a *App) runMigrations() error {
+	switch a.cfg.MigrateMode {
+	case config.MigrateOff:
+		a.log.Info("migrations skipped", slog.String("mode", string(a.cfg.MigrateMode)))
+		return nil
+	case config.MigrateAuto:
+		mg, err := postgresql.NewMigrator(a.cfg.DatabaseURL)
+		if err != nil {
+			return fmt.Errorf("migrator: %w", err)
+		}
+		defer func() { _ = mg.Close() }()
+		if err := mg.Up(); err != nil {
+			return fmt.Errorf("migrate: %w", err)
+		}
+		return nil
+	case config.MigrateManual:
+		mg, err := postgresql.NewMigrator(a.cfg.DatabaseURL)
+		if err != nil {
+			return fmt.Errorf("migrator: %w", err)
+		}
+		defer func() { _ = mg.Close() }()
+		pending, err := mg.HasPending()
+		if err != nil {
+			return fmt.Errorf("check pending: %w", err)
+		}
+		if pending {
+			return errors.New("manual mode: pending migrations detected; run `migrate up`")
+		}
+		return nil
+	default:
+		return fmt.Errorf("unknown migrate mode %q", a.cfg.MigrateMode)
+	}
 }
 
 //nolint:unparam // see initLogger.

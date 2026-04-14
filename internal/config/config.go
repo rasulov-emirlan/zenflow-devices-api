@@ -7,7 +7,28 @@ import (
 	"strings"
 )
 
+// Env is the deployment environment. It gates destructive operations and
+// defaults for migration/seed behavior.
+type Env string
+
+const (
+	EnvDev     Env = "dev"
+	EnvStaging Env = "staging"
+	EnvProd    Env = "prod"
+)
+
+// MigrateMode controls what initDB does with pending migrations at boot.
+type MigrateMode string
+
+const (
+	MigrateAuto   MigrateMode = "auto"   // apply pending migrations up
+	MigrateManual MigrateMode = "manual" // fail fast if any pending
+	MigrateOff    MigrateMode = "off"    // skip, trust external tooling
+)
+
 type Config struct {
+	Env            Env
+	MigrateMode    MigrateMode
 	Port           string
 	DatabaseURL    string
 	LogLevel       string
@@ -15,7 +36,26 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
+	envStr := strings.ToLower(getenv("APP_ENV", string(EnvDev)))
+	env, err := parseEnv(envStr)
+	if err != nil {
+		return nil, err
+	}
+
+	modeStr := strings.ToLower(getenv("MIGRATE_MODE", defaultMigrateMode(env)))
+	mode, err := parseMigrateMode(modeStr)
+	if err != nil {
+		return nil, err
+	}
+	if env == EnvProd && mode == MigrateAuto {
+		// Auto migrations in production would let a rollback-worthy schema
+		// change ship silently with the app. Force the operator to opt in.
+		return nil, errors.New("MIGRATE_MODE=auto is not allowed when APP_ENV=prod")
+	}
+
 	cfg := &Config{
+		Env:         env,
+		MigrateMode: mode,
 		Port:        getenv("PORT", "8080"),
 		DatabaseURL: os.Getenv("DATABASE_URL"),
 		LogLevel:    getenv("LOG_LEVEL", "info"),
@@ -41,6 +81,31 @@ func getenv(k, def string) string {
 		return v
 	}
 	return def
+}
+
+func parseEnv(s string) (Env, error) {
+	switch Env(s) {
+	case EnvDev, EnvStaging, EnvProd:
+		return Env(s), nil
+	default:
+		return "", fmt.Errorf("invalid APP_ENV %q (want dev|staging|prod)", s)
+	}
+}
+
+func parseMigrateMode(s string) (MigrateMode, error) {
+	switch MigrateMode(s) {
+	case MigrateAuto, MigrateManual, MigrateOff:
+		return MigrateMode(s), nil
+	default:
+		return "", fmt.Errorf("invalid MIGRATE_MODE %q (want auto|manual|off)", s)
+	}
+}
+
+func defaultMigrateMode(env Env) string {
+	if env == EnvProd {
+		return string(MigrateOff)
+	}
+	return string(MigrateAuto)
 }
 
 // parseUsers parses "user1:hash1,user2:hash2".
