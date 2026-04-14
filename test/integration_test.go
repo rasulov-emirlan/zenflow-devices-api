@@ -22,6 +22,7 @@ import (
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/auth"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/deviceprofiles"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/templates"
+	"github.com/rasulov-emirlan/zenflow-devices-api/internal/seed"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/storage/postgresql"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/transport/httprest"
 )
@@ -57,6 +58,10 @@ func TestDeviceProfilesEndToEnd(t *testing.T) {
 		t.Fatalf("pool: %v", err)
 	}
 	t.Cleanup(pool.Close)
+
+	if err := seed.NewTemplateSeeder(pool).Seed(ctx, seed.Options{OnConflict: seed.OnConflictSkip}); err != nil {
+		t.Fatalf("seed templates: %v", err)
+	}
 
 	hash, _ := bcrypt.GenerateFromPassword([]byte("secret"), bcrypt.MinCost)
 	resolver := auth.NewResolver(map[string]string{"alice": string(hash), "bob": string(hash)})

@@ -20,6 +20,9 @@ services:
       PORT: 8080
       DATABASE_URL: postgres://zenflow:zenflow@postgres:5432/zenflow?sslmode=disable
       LOG_LEVEL: info
+      APP_ENV: dev
+      MIGRATE_MODE: auto
+      SEED_ON_BOOT: "true"
       BASIC_AUTH_USERS: "alice:$$2a$$10$$Y10WC4uCFi2qC5f/gts5s.5qYGjkRJM5It.MKhZvAevUnto6fyMgi"
     ports:
       - "8080:8080"

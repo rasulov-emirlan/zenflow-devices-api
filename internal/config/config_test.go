@@ -87,7 +87,7 @@ func TestLoadValidation(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Load err: %v", err)
 		}
-		if cfg.Env != EnvDev || cfg.MigrateMode != MigrateAuto {
+		if cfg.Env != EnvDev || cfg.MigrateMode != MigrateAuto || cfg.SeedOnBoot {
 			t.Errorf("unexpected cfg: %+v", cfg)
 		}
 	})
@@ -108,6 +108,15 @@ func TestLoadValidation(t *testing.T) {
 		set(t, base)
 		t.Setenv("APP_ENV", "prod")
 		t.Setenv("MIGRATE_MODE", "auto")
+		if _, err := Load(); err == nil {
+			t.Fatal("want err, got nil")
+		}
+	})
+
+	t.Run("prod seed rejected", func(t *testing.T) {
+		set(t, base)
+		t.Setenv("APP_ENV", "prod")
+		t.Setenv("SEED_ON_BOOT", "true")
 		if _, err := Load(); err == nil {
 			t.Fatal("want err, got nil")
 		}

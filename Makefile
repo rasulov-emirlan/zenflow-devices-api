@@ -1,5 +1,5 @@
 .PHONY: run test tidy build up down generate lint-spec \
-	migrate-up migrate-down migrate-version migrate-create
+	migrate-up migrate-down migrate-version migrate-create seed-run
 
 MIGRATIONS_DIR := internal/storage/postgresql/migrations
 
@@ -46,3 +46,6 @@ migrate-create:
 	  down=$(MIGRATIONS_DIR)/$${next}_$(NAME).down.sql; \
 	  : > $$up && : > $$down && \
 	  echo "created $$up" && echo "created $$down"
+
+seed-run:
+	go run ./cmd/seed run --source=templates --on-conflict=skip

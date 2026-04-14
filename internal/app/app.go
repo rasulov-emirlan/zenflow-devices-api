@@ -16,6 +16,7 @@ import (
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/config"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/deviceprofiles"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/templates"
+	"github.com/rasulov-emirlan/zenflow-devices-api/internal/seed"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/storage/postgresql"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/transport/httprest"
 	"github.com/rasulov-emirlan/zenflow-devices-api/pkg/logging"
@@ -87,6 +88,16 @@ func (a *App) initDB(ctx context.Context) error {
 	}
 	a.pool = pool
 	a.addCleanup(func(context.Context) error { pool.Close(); return nil })
+
+	if a.cfg.SeedOnBoot && a.cfg.Env == config.EnvDev {
+		// Seed is best-effort idempotent; we run it only in dev, only when
+		// explicitly opted in. Config.Load already rejects the prod case.
+		seeder := seed.NewTemplateSeeder(pool)
+		if err := seeder.Seed(ctx, seed.Options{OnConflict: seed.OnConflictSkip}); err != nil {
+			return fmt.Errorf("seed: %w", err)
+		}
+		a.log.Info("seeded templates on boot")
+	}
 	return nil
 }
 

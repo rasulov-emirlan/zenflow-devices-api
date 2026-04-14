@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -29,6 +30,7 @@ const (
 type Config struct {
 	Env            Env
 	MigrateMode    MigrateMode
+	SeedOnBoot     bool
 	Port           string
 	DatabaseURL    string
 	LogLevel       string
@@ -53,9 +55,18 @@ func Load() (*Config, error) {
 		return nil, errors.New("MIGRATE_MODE=auto is not allowed when APP_ENV=prod")
 	}
 
+	seedOnBoot, err := parseBool(getenv("SEED_ON_BOOT", "false"))
+	if err != nil {
+		return nil, fmt.Errorf("parse SEED_ON_BOOT: %w", err)
+	}
+	if seedOnBoot && env == EnvProd {
+		return nil, errors.New("SEED_ON_BOOT=true is not allowed when APP_ENV=prod")
+	}
+
 	cfg := &Config{
 		Env:         env,
 		MigrateMode: mode,
+		SeedOnBoot:  seedOnBoot,
 		Port:        getenv("PORT", "8080"),
 		DatabaseURL: os.Getenv("DATABASE_URL"),
 		LogLevel:    getenv("LOG_LEVEL", "info"),
@@ -106,6 +117,13 @@ func defaultMigrateMode(env Env) string {
 		return string(MigrateOff)
 	}
 	return string(MigrateAuto)
+}
+
+func parseBool(s string) (bool, error) {
+	if s == "" {
+		return false, nil
+	}
+	return strconv.ParseBool(s)
 }
 
 // parseUsers parses "user1:hash1,user2:hash2".

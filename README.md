@@ -195,6 +195,7 @@ currency between layers; each adapter translates at its edge (pg `23505` →
 | `BASIC_AUTH_USERS`  | —       | required, `user1:bcrypt_hash1,user2:bcrypt_hash2` |
 | `APP_ENV`           | `dev`   | `dev` / `staging` / `prod` |
 | `MIGRATE_MODE`      | `auto` in dev/staging, `off` in prod | `auto` / `manual` / `off`. `auto` is rejected in prod. |
+| `SEED_ON_BOOT`      | `false` | dev-only; rejected in prod |
 
 Generate a bcrypt hash:
 ```bash
@@ -238,6 +239,26 @@ make migrate-create NAME=add_index_on_foo   # scaffolds next-numbered .up.sql + 
 ```
 
 `down` is hard-blocked when `APP_ENV=prod`.
+
+---
+
+## Seeds
+
+Reference data (e.g. the template catalog) lives outside the schema in
+`internal/seed/data/` and is exposed through a small `Seeder` interface with
+`OnConflict` options (`skip` | `update` | `fail`). See [`seeds/README.md`](seeds/README.md).
+
+### CLI (`cmd/seed`)
+
+```bash
+DATABASE_URL=postgres://... go run ./cmd/seed run --source=templates --on-conflict=skip
+make seed-run
+```
+
+### On boot
+
+Set `SEED_ON_BOOT=true` in `dev` only — the app will run the templates seeder
+after migrations. In `prod` the flag is rejected at config load.
 
 ---
 
