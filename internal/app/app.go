@@ -1,6 +1,6 @@
-// Package app owns process lifecycle: config loading, logger, DB, domain
-// services, and HTTP server. Init runs the phases one by one; each phase
-// may register a cleanup that runs in LIFO order on Shutdown.
+// Package app owns process lifecycle: config, logger, DB, domain services,
+// and HTTP server. Init runs each phase in order; phases register cleanups
+// that Shutdown runs in LIFO so teardown mirrors setup.
 package app
 
 import (
@@ -67,6 +67,10 @@ func (a *App) initConfig(_ context.Context) error {
 	return nil
 }
 
+// Returning error keeps every init step on the same signature so the Init
+// pipeline reads uniformly; individual steps may become fallible later.
+//
+//nolint:unparam
 func (a *App) initLogger(_ context.Context) error {
 	a.log = logging.New(a.cfg.LogLevel)
 	slog.SetDefault(a.log)
@@ -86,6 +90,7 @@ func (a *App) initDB(ctx context.Context) error {
 	return nil
 }
 
+//nolint:unparam // see initLogger.
 func (a *App) initDomains(_ context.Context) error {
 	a.resolver = auth.NewResolver(a.cfg.BasicAuthUsers)
 
@@ -97,6 +102,7 @@ func (a *App) initDomains(_ context.Context) error {
 	return nil
 }
 
+//nolint:unparam // see initLogger.
 func (a *App) initHTTP(_ context.Context) error {
 	handler := httprest.NewRouter(httprest.Deps{
 		Logger:    a.log,
@@ -114,8 +120,6 @@ func (a *App) initHTTP(_ context.Context) error {
 	return nil
 }
 
-// Run starts the HTTP server and blocks until ctx is cancelled
-// or the server fails.
 func (a *App) Run(ctx context.Context) error {
 	errCh := make(chan error, 1)
 	go func() {
@@ -134,7 +138,6 @@ func (a *App) Run(ctx context.Context) error {
 	}
 }
 
-// Shutdown runs registered cleanups in LIFO order.
 func (a *App) Shutdown(ctx context.Context) error {
 	var errs []error
 	for i := len(a.cleanups) - 1; i >= 0; i-- {

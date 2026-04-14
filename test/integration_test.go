@@ -1,14 +1,11 @@
 //go:build integration
 
-// Run with: go test -tags=integration ./test/...
-// Requires Docker.
 package test
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -211,6 +208,3 @@ func readBody(resp *http.Response) string {
 func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
-
-// _ reference to fmt to keep import set stable if we add debug prints.
-var _ = fmt.Sprintf

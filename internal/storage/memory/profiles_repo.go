@@ -1,5 +1,5 @@
-// Package memory provides in-memory repo implementations used for tests
-// and as a reference implementation of the domain ports.
+// Package memory provides in-memory implementations of the domain repo ports,
+// used as a reference implementation and in tests.
 package memory
 
 import (
@@ -51,7 +51,6 @@ func (r *ProfilesRepo) ListByUser(_ context.Context, userID string, page profile
 			out = append(out, p)
 		}
 	}
-	// naive pagination
 	if page.Offset >= len(out) {
 		return []profiles.Profile{}, nil
 	}

@@ -9,8 +9,6 @@ import (
 	"github.com/rasulov-emirlan/zenflow-devices-api/pkg/httpx"
 )
 
-// writeDomainError maps domain errors to HTTP responses.
-// Unknown errors become 500 with a generic message — full error goes to logs.
 func writeDomainError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, profiles.ErrInvalidInput):

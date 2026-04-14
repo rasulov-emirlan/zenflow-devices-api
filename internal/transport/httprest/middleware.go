@@ -1,4 +1,5 @@
-// Package httprest is the chi-based HTTP transport adapter.
+// Package httprest is the chi-based HTTP transport adapter. Handlers translate
+// to/from domain types via DTOs defined alongside each handler.
 package httprest
 
 import (
@@ -23,8 +24,6 @@ const (
 
 const authRealm = `Basic realm="zenflow-devices-api", charset="UTF-8"`
 
-// UserID returns the authenticated user id from the request context.
-// Panics if used outside a handler chain that ran basic-auth middleware.
 func UserID(ctx context.Context) string {
 	if v, ok := ctx.Value(ctxUserID).(string); ok {
 		return v

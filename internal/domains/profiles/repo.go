@@ -2,9 +2,9 @@ package profiles
 
 import "context"
 
-// Repo is the port implemented by storage adapters.
-// Implementations must translate backend-specific errors to the domain
-// errors declared in errors.go (ErrNotFound, ErrDuplicateName, ...).
+// Repo is the port implemented by storage adapters. Implementations must
+// translate backend-specific errors to the domain errors in errors.go so
+// upstream layers can match with errors.Is.
 type Repo interface {
 	Insert(ctx context.Context, p Profile) error
 	GetByID(ctx context.Context, userID, id string) (Profile, error)

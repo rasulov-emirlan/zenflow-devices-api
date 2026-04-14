@@ -16,8 +16,6 @@ type profilesHandler struct {
 	log *slog.Logger
 }
 
-// --- DTOs (transport-owned) ---
-
 type headerDTO struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
@@ -89,8 +87,6 @@ func fromHeaderDTOs(in []headerDTO) []profiles.Header {
 	}
 	return out
 }
-
-// --- handlers ---
 
 func (h *profilesHandler) create(w http.ResponseWriter, r *http.Request) {
 	var req createProfileRequest

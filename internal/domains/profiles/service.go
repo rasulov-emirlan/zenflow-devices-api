@@ -10,8 +10,9 @@ import (
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/templates"
 )
 
-// TemplateLookup is the narrow dependency on the templates domain.
-// We depend on the interface, not the concrete service, to keep the seam clean.
+// TemplateLookup is the narrow seam into the templates domain — the profile
+// service only needs Get, so it depends on an interface rather than the concrete
+// service, which keeps testing and future splits simple.
 type TemplateLookup interface {
 	Get(ctx context.Context, slug string) (templates.Template, error)
 }
@@ -95,8 +96,8 @@ func (s *Service) Delete(ctx context.Context, userID, id string) error {
 	return s.repo.Delete(ctx, userID, id)
 }
 
-// applyTemplate fills any zero-valued fields in Input from the template.
-// Caller-provided fields always win.
+// applyTemplate fills zero-valued Input fields from the template so caller
+// overrides always win.
 func applyTemplate(in *Input, t templates.Template) {
 	if in.Name == "" {
 		in.Name = t.Name

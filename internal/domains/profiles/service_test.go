@@ -10,8 +10,6 @@ import (
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/templates"
 )
 
-// inline fakes — keep tests self-contained, no adapter imports.
-
 type fakeRepo struct {
 	byID     map[string]Profile
 	byUserNm map[string]string // userID+"\x00"+name -> id

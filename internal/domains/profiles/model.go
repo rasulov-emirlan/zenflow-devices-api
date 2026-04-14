@@ -1,5 +1,5 @@
-// Package profiles is the device-profile domain. It has no knowledge of HTTP,
-// SQL, or any transport/storage adapter — those plug in via the Repo port.
+// Package profiles is the device-profile domain: pure Go business logic
+// wired to storage and transport through the Repo port.
 package profiles
 
 import (
@@ -40,7 +40,6 @@ type Profile struct {
 	UpdatedAt     time.Time
 }
 
-// Input is a full-definition payload used by Create.
 type Input struct {
 	Name          string
 	DeviceType    DeviceType
@@ -53,7 +52,7 @@ type Input struct {
 	TemplateSlug  *string // if set, Create fills unset fields from the template
 }
 
-// Patch represents a partial update. Nil fields are left unchanged.
+// Patch is a partial update: nil fields are left unchanged.
 type Patch struct {
 	Name          *string
 	DeviceType    *DeviceType
@@ -65,7 +64,6 @@ type Patch struct {
 	Extra         *map[string]any
 }
 
-// Page is pagination params for List.
 type Page struct {
 	Limit  int
 	Offset int
@@ -90,7 +88,6 @@ const (
 
 var countryRE = regexp.MustCompile(`^[A-Z]{2}$`)
 
-// Validate enforces the domain invariants of a fully-formed profile.
 func (p Profile) Validate() error {
 	return validateFields(p.Name, p.DeviceType, p.WindowWidth, p.WindowHeight, p.UserAgent, p.CountryCode, p.CustomHeaders)
 }

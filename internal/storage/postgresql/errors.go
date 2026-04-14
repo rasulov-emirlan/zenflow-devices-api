@@ -10,7 +10,6 @@ import (
 
 const uniqueViolation = "23505"
 
-// translateProfilesErr maps backend errors to domain errors for profiles.
 func translateProfilesErr(err error) error {
 	if err == nil {
 		return nil

@@ -1,5 +1,4 @@
-// Package postgresql holds the pgx-backed storage adapter.
-// Nothing in this package imports transport concerns.
+// Package postgresql is the pgx-backed storage adapter for the domain repos.
 package postgresql
 
 import (
@@ -17,7 +16,6 @@ import (
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
-// OpenPool creates a pgxpool and verifies connectivity.
 func OpenPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
@@ -34,7 +32,6 @@ func OpenPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-// Migrate runs all pending migrations embedded in the binary.
 func Migrate(dsn string) error {
 	src, err := iofs.New(migrationsFS, "migrations")
 	if err != nil {
@@ -44,14 +41,15 @@ func Migrate(dsn string) error {
 	if err != nil {
 		return fmt.Errorf("migrate init: %w", err)
 	}
-	defer m.Close()
+	defer func() { _, _ = m.Close() }()
 	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return fmt.Errorf("migrate up: %w", err)
 	}
 	return nil
 }
 
-// trimScheme rewrites postgres:// / postgresql:// to bare host so we can prefix pgx5://.
+// trimScheme strips the postgres:// prefix so callers can re-prefix with pgx5://,
+// which is the scheme registered by golang-migrate's pgx/v5 driver.
 func trimScheme(dsn string) string {
 	for _, p := range []string{"postgres://", "postgresql://"} {
 		if len(dsn) >= len(p) && dsn[:len(p)] == p {
@@ -60,4 +58,3 @@ func trimScheme(dsn string) string {
 	}
 	return dsn
 }
-

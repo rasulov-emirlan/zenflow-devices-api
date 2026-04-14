@@ -108,8 +108,6 @@ func (r *ProfilesRepo) Delete(ctx context.Context, userID, id string) error {
 	return nil
 }
 
-// --- scanning + JSON helpers ---
-
 type rowScanner interface {
 	Scan(dest ...any) error
 }
