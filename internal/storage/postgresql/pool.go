@@ -6,17 +6,26 @@ import (
 	"embed"
 	"fmt"
 
+	"github.com/exaring/otelpgx"
+	"github.com/jackc/pgx/v5/multitracer"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
+// OpenPool builds a pgx pool with observability attached: OTLP traces via
+// otelpgx and Prometheus metrics via the local metrics tracer. The tracers
+// are combined via multitracer so both fire for every query.
 func OpenPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("parse dsn: %w", err)
 	}
+	cfg.ConnConfig.Tracer = multitracer.New(
+		NewMetricsTracer(),
+		otelpgx.NewTracer(),
+	)
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("new pool: %w", err)

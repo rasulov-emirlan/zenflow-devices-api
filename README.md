@@ -287,3 +287,62 @@ after migrations. In `prod` the flag is rejected at config load.
 - **CI** — GitHub Actions matrix: `go test ./...` + `go test -tags=integration`.
 - **Profile versioning** — `schema_version` on JSONB so migrations can safely
   rewrite older shapes.
+
+---
+
+## Observability
+
+The app emits structured logs, Prometheus metrics, and OpenTelemetry traces.
+Collectors (Prometheus, Grafana, Tempo, OTEL collector) are deployed
+separately and are not part of this repo's `docker-compose.yml`.
+
+### Logs (slog)
+
+JSON logs to stdout. Every HTTP request gets a request-scoped logger carrying:
+
+- `request_id` (from `X-Request-Id` or generated)
+- `method`, `route` (chi route pattern, never raw path)
+- `user_id` (once Basic Auth resolves)
+- `trace_id`, `span_id` (when tracing is enabled)
+
+Domain and repo code pulls the logger via `logging.LoggerFromCtx(ctx)`;
+4xx responses are logged at Warn and 5xx at Error. Repo errors include
+`sqlstate` from `*pgconn.PgError`.
+
+### Metrics (Prometheus)
+
+Exposed on `METRICS_ADDR` (default `:9090`) at `/metrics`, with `/healthz`
+next to it. This is a separate listener from the public API port so the
+admin surface can be firewalled independently.
+
+App-level series:
+
+- `zenflow_http_requests_total{method,route,status_class}`
+- `zenflow_http_request_duration_seconds{method,route,status_class}` (histogram)
+- `zenflow_http_requests_in_flight`
+- `zenflow_db_queries_total{op,table,outcome}`
+- `zenflow_db_query_duration_seconds{op,table}` (histogram)
+- `zenflow_device_profiles_created_total`
+- `zenflow_device_profiles_validation_errors_total{field}`
+- `zenflow_templates_lookups_total{outcome}`
+
+Go runtime and process collectors are also registered.
+
+### Traces (OpenTelemetry)
+
+Disabled by default. Set `TRACING_ENABLED=true` and point `OTLP_ENDPOINT`
+(default `otel-collector:4317`) at a collector to start exporting spans
+over OTLP/gRPC. Propagators are W3C TraceContext + Baggage.
+
+Inbound HTTP requests create server spans named `METHOD RoutePattern` via
+`otelhttp`. Postgres queries create spans via `otelpgx`. Tracing init
+failures are non-fatal — the app keeps running without export.
+
+### Environment
+
+| Var | Default | Purpose |
+| --- | --- | --- |
+| `METRICS_ADDR` | `:9090` | Admin listener for `/metrics` and `/healthz` |
+| `OTLP_ENDPOINT` | `otel-collector:4317` | OTLP gRPC endpoint (host:port) |
+| `TRACING_ENABLED` | `false` | Enable OTEL trace export |
+| `OTEL_SERVICE_NAME` | `zenflow-devices-api` | `service.name` resource attr |

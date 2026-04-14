@@ -9,7 +9,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/deviceprofiles"
+	"github.com/rasulov-emirlan/zenflow-devices-api/pkg/pgxtags"
 )
+
+const tableDeviceProfiles = "device_profiles"
 
 type DeviceProfilesRepo struct {
 	pool *pgxpool.Pool
@@ -31,6 +34,7 @@ func (r *DeviceProfilesRepo) Insert(ctx context.Context, p deviceprofiles.Device
 	if err != nil {
 		return err
 	}
+	ctx = pgxtags.With(ctx, "insert", tableDeviceProfiles)
 	_, err = r.pool.Exec(ctx, `
 		INSERT INTO device_profiles (`+deviceProfileColumns+`)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
@@ -41,6 +45,7 @@ func (r *DeviceProfilesRepo) Insert(ctx context.Context, p deviceprofiles.Device
 }
 
 func (r *DeviceProfilesRepo) GetByID(ctx context.Context, userID, id string) (deviceprofiles.DeviceProfile, error) {
+	ctx = pgxtags.With(ctx, "select", tableDeviceProfiles)
 	row := r.pool.QueryRow(ctx,
 		`SELECT `+deviceProfileColumns+` FROM device_profiles WHERE id = $1 AND user_id = $2`, id, userID)
 	p, err := scanDeviceProfile(row)
@@ -51,6 +56,7 @@ func (r *DeviceProfilesRepo) GetByID(ctx context.Context, userID, id string) (de
 }
 
 func (r *DeviceProfilesRepo) ListByUser(ctx context.Context, userID string, page deviceprofiles.Page) ([]deviceprofiles.DeviceProfile, error) {
+	ctx = pgxtags.With(ctx, "select", tableDeviceProfiles)
 	rows, err := r.pool.Query(ctx,
 		`SELECT `+deviceProfileColumns+` FROM device_profiles
 		 WHERE user_id = $1
@@ -80,6 +86,7 @@ func (r *DeviceProfilesRepo) Update(ctx context.Context, p deviceprofiles.Device
 	if err != nil {
 		return err
 	}
+	ctx = pgxtags.With(ctx, "update", tableDeviceProfiles)
 	tag, err := r.pool.Exec(ctx, `
 		UPDATE device_profiles SET
 		  name = $3, device_type = $4, window_width = $5, window_height = $6,
@@ -99,6 +106,7 @@ func (r *DeviceProfilesRepo) Update(ctx context.Context, p deviceprofiles.Device
 }
 
 func (r *DeviceProfilesRepo) Delete(ctx context.Context, userID, id string) error {
+	ctx = pgxtags.With(ctx, "delete", tableDeviceProfiles)
 	tag, err := r.pool.Exec(ctx,
 		`DELETE FROM device_profiles WHERE id = $1 AND user_id = $2`, id, userID)
 	if err != nil {

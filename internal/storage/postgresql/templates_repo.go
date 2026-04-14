@@ -9,7 +9,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/templates"
+	"github.com/rasulov-emirlan/zenflow-devices-api/pkg/pgxtags"
 )
+
+const tableTemplates = "templates"
 
 type TemplatesRepo struct {
 	pool *pgxpool.Pool
@@ -21,6 +24,7 @@ const templateColumns = `slug, name, device_type, window_width, window_height,
 	user_agent, country_code, custom_headers`
 
 func (r *TemplatesRepo) Get(ctx context.Context, slug string) (templates.Template, error) {
+	ctx = pgxtags.With(ctx, "select", tableTemplates)
 	row := r.pool.QueryRow(ctx,
 		`SELECT `+templateColumns+` FROM templates WHERE slug = $1`, slug)
 	t, err := scanTemplate(row)
@@ -31,6 +35,7 @@ func (r *TemplatesRepo) Get(ctx context.Context, slug string) (templates.Templat
 }
 
 func (r *TemplatesRepo) List(ctx context.Context) ([]templates.Template, error) {
+	ctx = pgxtags.With(ctx, "select", tableTemplates)
 	rows, err := r.pool.Query(ctx,
 		`SELECT `+templateColumns+` FROM templates ORDER BY slug`)
 	if err != nil {

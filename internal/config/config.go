@@ -35,6 +35,13 @@ type Config struct {
 	DatabaseURL    string
 	LogLevel       string
 	BasicAuthUsers map[string]string // username -> bcrypt hash
+
+	// Observability
+
+	MetricsAddr    string // admin listener for /metrics and /healthz
+	OTLPEndpoint   string // OTLP gRPC endpoint, host:port, no scheme
+	TracingEnabled bool
+	ServiceName    string // OTEL service.name
 }
 
 func Load() (*Config, error) {
@@ -82,6 +89,16 @@ func Load() (*Config, error) {
 		return nil, errors.New("BASIC_AUTH_USERS is required (at least one user)")
 	}
 	cfg.BasicAuthUsers = users
+
+	cfg.MetricsAddr = getenv("METRICS_ADDR", ":9090")
+	cfg.OTLPEndpoint = getenv("OTLP_ENDPOINT", "otel-collector:4317")
+	tracing, err := parseBool(getenv("TRACING_ENABLED", "false"))
+	if err != nil {
+		return nil, fmt.Errorf("parse TRACING_ENABLED: %w", err)
+	}
+	cfg.TracingEnabled = tracing
+	cfg.ServiceName = getenv("OTEL_SERVICE_NAME", "zenflow-devices-api")
+
 	return cfg, nil
 }
 

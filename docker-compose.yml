@@ -24,5 +24,10 @@ services:
       MIGRATE_MODE: auto
       SEED_ON_BOOT: "true"
       BASIC_AUTH_USERS: "alice:$$2a$$10$$Y10WC4uCFi2qC5f/gts5s.5qYGjkRJM5It.MKhZvAevUnto6fyMgi"
+      METRICS_ADDR: ":9090"
+      OTLP_ENDPOINT: "otel-collector:4317"
+      TRACING_ENABLED: "false"
+      OTEL_SERVICE_NAME: "zenflow-devices-api"
     ports:
       - "8080:8080"
+      - "9090:9090"
