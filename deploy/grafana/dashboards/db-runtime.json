@@ -1,0 +1,141 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "uid": "zenflow-db-runtime",
+  "title": "Zenflow — DB & Go Runtime",
+  "tags": ["zenflow", "db", "runtime"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {"from": "now-1h", "to": "now"},
+  "templating": {
+    "list": [
+      {
+        "name": "table",
+        "label": "table",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+        "query": {"query": "label_values(zenflow_db_queries_total, table)", "refId": "A"},
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "current": {"text": "All", "value": "$__all"}
+      },
+      {
+        "name": "op",
+        "label": "op",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+        "query": {"query": "label_values(zenflow_db_queries_total, op)", "refId": "A"},
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "current": {"text": "All", "value": "$__all"}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "DB queries/sec",
+      "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+      "gridPos": {"h": 5, "w": 6, "x": 0, "y": 0},
+      "fieldConfig": {"defaults": {"unit": "ops", "decimals": 2}, "overrides": []},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "value", "graphMode": "area"},
+      "targets": [{"refId": "A", "expr": "sum(rate(zenflow_db_queries_total{table=~\"$table\",op=~\"$op\"}[1m]))"}]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "DB error rate (%)",
+      "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+      "gridPos": {"h": 5, "w": 6, "x": 6, "y": 0},
+      "fieldConfig": {"defaults": {"unit": "percent", "decimals": 2, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 5}]}}, "overrides": []},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "background"},
+      "targets": [{"refId": "A", "expr": "100 * sum(rate(zenflow_db_queries_total{outcome=\"error\",table=~\"$table\",op=~\"$op\"}[5m])) / clamp_min(sum(rate(zenflow_db_queries_total{table=~\"$table\",op=~\"$op\"}[5m])), 1e-9)"}]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "DB p95 duration",
+      "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+      "gridPos": {"h": 5, "w": 6, "x": 12, "y": 0},
+      "fieldConfig": {"defaults": {"unit": "s", "decimals": 3}, "overrides": []},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "value", "graphMode": "area"},
+      "targets": [{"refId": "A", "expr": "histogram_quantile(0.95, sum(rate(zenflow_db_query_duration_seconds_bucket{table=~\"$table\",op=~\"$op\"}[5m])) by (le))"}]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Goroutines",
+      "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+      "gridPos": {"h": 5, "w": 6, "x": 18, "y": 0},
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 0}, "overrides": []},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "value", "graphMode": "area"},
+      "targets": [{"refId": "A", "expr": "go_goroutines"}]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "DB queries/sec by op + table",
+      "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+      "gridPos": {"h": 9, "w": 12, "x": 0, "y": 5},
+      "fieldConfig": {"defaults": {"unit": "ops", "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 5, "stacking": {"mode": "normal", "group": "A"}}}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "right", "calcs": ["mean", "lastNotNull"]}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"refId": "A", "expr": "sum by (op, table) (rate(zenflow_db_queries_total{table=~\"$table\",op=~\"$op\"}[1m]))", "legendFormat": "{{op}} {{table}}"}]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "DB p50 / p95 / p99 duration",
+      "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+      "gridPos": {"h": 9, "w": 12, "x": 12, "y": 5},
+      "fieldConfig": {"defaults": {"unit": "s", "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 5}}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "right", "calcs": ["mean", "lastNotNull"]}, "tooltip": {"mode": "multi"}},
+      "targets": [
+        {"refId": "A", "expr": "histogram_quantile(0.50, sum(rate(zenflow_db_query_duration_seconds_bucket{table=~\"$table\",op=~\"$op\"}[5m])) by (le))", "legendFormat": "p50"},
+        {"refId": "B", "expr": "histogram_quantile(0.95, sum(rate(zenflow_db_query_duration_seconds_bucket{table=~\"$table\",op=~\"$op\"}[5m])) by (le))", "legendFormat": "p95"},
+        {"refId": "C", "expr": "histogram_quantile(0.99, sum(rate(zenflow_db_query_duration_seconds_bucket{table=~\"$table\",op=~\"$op\"}[5m])) by (le))", "legendFormat": "p99"}
+      ]
+    },
+    {
+      "id": 20,
+      "type": "timeseries",
+      "title": "Goroutines",
+      "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 14},
+      "fieldConfig": {"defaults": {"unit": "short", "custom": {"drawStyle": "line", "fillOpacity": 10}}, "overrides": []},
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "single"}},
+      "targets": [{"refId": "A", "expr": "go_goroutines", "legendFormat": "goroutines"}]
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "Heap in-use",
+      "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 14},
+      "fieldConfig": {"defaults": {"unit": "bytes", "custom": {"drawStyle": "line", "fillOpacity": 10}}, "overrides": []},
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "single"}},
+      "targets": [{"refId": "A", "expr": "go_memstats_heap_inuse_bytes", "legendFormat": "heap inuse"}]
+    },
+    {
+      "id": 22,
+      "type": "timeseries",
+      "title": "GC pause (p95, 5m)",
+      "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 14},
+      "fieldConfig": {"defaults": {"unit": "s", "custom": {"drawStyle": "line", "fillOpacity": 5}}, "overrides": []},
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "single"}},
+      "targets": [
+        {"refId": "A", "expr": "go_gc_duration_seconds{quantile=\"0.5\"}", "legendFormat": "p50"},
+        {"refId": "B", "expr": "go_gc_duration_seconds{quantile=\"0.75\"}", "legendFormat": "p75"},
+        {"refId": "C", "expr": "go_gc_duration_seconds{quantile=\"1\"}", "legendFormat": "max"}
+      ]
+    }
+  ]
+}

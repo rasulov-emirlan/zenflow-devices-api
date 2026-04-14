@@ -1,0 +1,174 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "uid": "zenflow-http",
+  "title": "Zenflow — HTTP RED",
+  "tags": ["zenflow", "http", "red"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {"from": "now-1h", "to": "now"},
+  "templating": {
+    "list": [
+      {
+        "name": "route",
+        "label": "route",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+        "query": {"query": "label_values(zenflow_http_requests_total, route)", "refId": "A"},
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "current": {"text": "All", "value": "$__all"}
+      },
+      {
+        "name": "method",
+        "label": "method",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+        "query": {"query": "label_values(zenflow_http_requests_total, method)", "refId": "A"},
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "current": {"text": "All", "value": "$__all"}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Request rate (req/s)",
+      "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+      "gridPos": {"h": 5, "w": 6, "x": 0, "y": 0},
+      "fieldConfig": {"defaults": {"unit": "reqps", "decimals": 2}, "overrides": []},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "colorMode": "value", "graphMode": "area"},
+      "targets": [
+        {"refId": "A", "expr": "sum(rate(zenflow_http_requests_total{route=~\"$route\",method=~\"$method\"}[1m]))", "legendFormat": "total"}
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Error rate (5xx %)",
+      "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+      "gridPos": {"h": 5, "w": 6, "x": 6, "y": 0},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "thresholds": {"mode": "absolute", "steps": [
+            {"color": "green", "value": null},
+            {"color": "yellow", "value": 1},
+            {"color": "red", "value": 5}
+          ]}
+        },
+        "overrides": []
+      },
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "colorMode": "background", "graphMode": "area"},
+      "targets": [
+        {"refId": "A", "expr": "100 * (sum(rate(zenflow_http_requests_total{status_class=\"5xx\",route=~\"$route\",method=~\"$method\"}[5m])) / clamp_min(sum(rate(zenflow_http_requests_total{route=~\"$route\",method=~\"$method\"}[5m])), 1e-9))", "legendFormat": "5xx%"}
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "In-flight requests",
+      "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+      "gridPos": {"h": 5, "w": 6, "x": 12, "y": 0},
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 0}, "overrides": []},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "colorMode": "value", "graphMode": "area"},
+      "targets": [{"refId": "A", "expr": "sum(zenflow_http_requests_in_flight)", "legendFormat": "in-flight"}]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "p95 latency (overall)",
+      "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+      "gridPos": {"h": 5, "w": 6, "x": 18, "y": 0},
+      "fieldConfig": {"defaults": {"unit": "s", "decimals": 3}, "overrides": []},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "colorMode": "value", "graphMode": "area"},
+      "targets": [
+        {"refId": "A", "expr": "histogram_quantile(0.95, sum(rate(zenflow_http_request_duration_seconds_bucket{route=~\"$route\",method=~\"$method\"}[5m])) by (le))", "legendFormat": "p95"}
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Request rate by route",
+      "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+      "gridPos": {"h": 9, "w": 12, "x": 0, "y": 5},
+      "fieldConfig": {"defaults": {"unit": "reqps", "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10, "stacking": {"mode": "normal", "group": "A"}}}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "right", "calcs": ["mean", "lastNotNull"]}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [
+        {"refId": "A", "expr": "sum by (route) (rate(zenflow_http_requests_total{route=~\"$route\",method=~\"$method\"}[1m]))", "legendFormat": "{{route}}"}
+      ]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Status class mix (req/s)",
+      "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+      "gridPos": {"h": 9, "w": 12, "x": 12, "y": 5},
+      "fieldConfig": {"defaults": {"unit": "reqps", "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 20, "stacking": {"mode": "normal", "group": "A"}}}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "right", "calcs": ["mean", "lastNotNull"]}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [
+        {"refId": "A", "expr": "sum by (status_class) (rate(zenflow_http_requests_total{route=~\"$route\",method=~\"$method\"}[1m]))", "legendFormat": "{{status_class}}"}
+      ]
+    },
+    {
+      "id": 20,
+      "type": "timeseries",
+      "title": "Latency percentiles (overall)",
+      "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+      "gridPos": {"h": 9, "w": 12, "x": 0, "y": 14},
+      "fieldConfig": {"defaults": {"unit": "s", "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 5}}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "right", "calcs": ["mean", "lastNotNull"]}, "tooltip": {"mode": "multi"}},
+      "targets": [
+        {"refId": "A", "expr": "histogram_quantile(0.50, sum(rate(zenflow_http_request_duration_seconds_bucket{route=~\"$route\",method=~\"$method\"}[5m])) by (le))", "legendFormat": "p50"},
+        {"refId": "B", "expr": "histogram_quantile(0.95, sum(rate(zenflow_http_request_duration_seconds_bucket{route=~\"$route\",method=~\"$method\"}[5m])) by (le))", "legendFormat": "p95"},
+        {"refId": "C", "expr": "histogram_quantile(0.99, sum(rate(zenflow_http_request_duration_seconds_bucket{route=~\"$route\",method=~\"$method\"}[5m])) by (le))", "legendFormat": "p99"}
+      ]
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "p95 latency by route",
+      "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+      "gridPos": {"h": 9, "w": 12, "x": 12, "y": 14},
+      "fieldConfig": {"defaults": {"unit": "s", "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 5}}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "right", "calcs": ["mean", "lastNotNull"]}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [
+        {"refId": "A", "expr": "histogram_quantile(0.95, sum by (le, route) (rate(zenflow_http_request_duration_seconds_bucket{route=~\"$route\",method=~\"$method\"}[5m])))", "legendFormat": "{{route}}"}
+      ]
+    },
+    {
+      "id": 30,
+      "type": "timeseries",
+      "title": "In-flight requests",
+      "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 23},
+      "fieldConfig": {"defaults": {"unit": "short", "custom": {"drawStyle": "line", "fillOpacity": 10}}, "overrides": []},
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "single"}},
+      "targets": [{"refId": "A", "expr": "sum(zenflow_http_requests_in_flight)", "legendFormat": "in-flight"}]
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "Domain: device profiles created / validation errors / template lookups",
+      "datasource": {"type": "prometheus", "uid": "prometheus-local"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 23},
+      "fieldConfig": {"defaults": {"unit": "ops", "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 5}}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "right", "calcs": ["mean", "lastNotNull"]}, "tooltip": {"mode": "multi"}},
+      "targets": [
+        {"refId": "A", "expr": "rate(zenflow_device_profiles_created_total[1m])", "legendFormat": "profiles created"},
+        {"refId": "B", "expr": "sum by (field) (rate(zenflow_device_profiles_validation_errors_total[1m]))", "legendFormat": "validation err {{field}}"},
+        {"refId": "C", "expr": "sum by (outcome) (rate(zenflow_templates_lookups_total[1m]))", "legendFormat": "template lookup {{outcome}}"}
+      ]
+    }
+  ]
+}

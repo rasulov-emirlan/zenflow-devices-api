@@ -1,0 +1,18 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: local
+    service: zenflow-devices-api
+
+scrape_configs:
+  - job_name: api
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["api:9090"]
+        labels:
+          service: zenflow-devices-api
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
