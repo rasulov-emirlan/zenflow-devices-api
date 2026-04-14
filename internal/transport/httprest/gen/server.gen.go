@@ -35,17 +35,20 @@ func (e DeviceType) Valid() bool {
 	}
 }
 
-// CreateDeviceProfileRequest defines model for CreateDeviceProfileRequest.
+// CreateDeviceProfileRequest When template_slug is provided, any omitted field is filled from the
+// template. Fields sent explicitly (including empty/zero) are validated
+// as supplied. Without a template_slug all fields must be present and
+// valid.
 type CreateDeviceProfileRequest struct {
-	CountryCode   string                  `json:"country_code"`
+	CountryCode   *string                 `json:"country_code,omitempty"`
 	CustomHeaders *[]Header               `json:"custom_headers,omitempty"`
-	DeviceType    DeviceType              `json:"device_type"`
+	DeviceType    *DeviceType             `json:"device_type,omitempty"`
 	Extra         *map[string]interface{} `json:"extra,omitempty"`
-	Name          string                  `json:"name"`
+	Name          *string                 `json:"name,omitempty"`
 	TemplateSlug  *string                 `json:"template_slug,omitempty"`
-	UserAgent     string                  `json:"user_agent"`
-	WindowHeight  int                     `json:"window_height"`
-	WindowWidth   int                     `json:"window_width"`
+	UserAgent     *string                 `json:"user_agent,omitempty"`
+	WindowHeight  *int                    `json:"window_height,omitempty"`
+	WindowWidth   *int                    `json:"window_width,omitempty"`
 }
 
 // DeviceProfile defines model for DeviceProfile.

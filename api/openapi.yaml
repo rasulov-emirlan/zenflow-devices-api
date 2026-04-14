@@ -244,13 +244,11 @@ components:
           items: { $ref: '#/components/schemas/DeviceProfile' }
     CreateDeviceProfileRequest:
       type: object
-      required:
-        - name
-        - device_type
-        - window_width
-        - window_height
-        - user_agent
-        - country_code
+      description: |
+        When template_slug is provided, any omitted field is filled from the
+        template. Fields sent explicitly (including empty/zero) are validated
+        as supplied. Without a template_slug all fields must be present and
+        valid.
       properties:
         name: { type: string }
         device_type: { $ref: '#/components/schemas/DeviceType' }

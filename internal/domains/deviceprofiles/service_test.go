@@ -98,14 +98,18 @@ func newService() (*Service, *fakeRepo) {
 	return svc, repo
 }
 
+func strPtr(s string) *string        { return &s }
+func intPtr(i int) *int              { return &i }
+func dtPtr(d DeviceType) *DeviceType { return &d }
+
 func validInput() Input {
 	return Input{
-		Name:         "my-profile",
-		DeviceType:   DeviceDesktop,
-		WindowWidth:  1920,
-		WindowHeight: 1080,
-		UserAgent:    "Mozilla/5.0",
-		CountryCode:  "US",
+		Name:         strPtr("my-profile"),
+		DeviceType:   dtPtr(DeviceDesktop),
+		WindowWidth:  intPtr(1920),
+		WindowHeight: intPtr(1080),
+		UserAgent:    strPtr("Mozilla/5.0"),
+		CountryCode:  strPtr("US"),
 	}
 }
 
@@ -131,7 +135,7 @@ func TestCreateRequiresUser(t *testing.T) {
 func TestCreateValidation(t *testing.T) {
 	svc, _ := newService()
 	in := validInput()
-	in.CountryCode = "usa"
+	in.CountryCode = strPtr("usa")
 	_, err := svc.Create(context.Background(), "alice", in)
 	if !errors.Is(err, ErrInvalidInput) {
 		t.Fatalf("want ErrInvalidInput, got %v", err)
@@ -154,7 +158,7 @@ func TestCreateFromTemplate(t *testing.T) {
 	svc, _ := newService()
 	slug := "iphone-us"
 	p, err := svc.Create(context.Background(), "alice", Input{
-		Name:         "my-iphone",
+		Name:         strPtr("my-iphone"),
 		TemplateSlug: &slug,
 	})
 	if err != nil {
@@ -172,8 +176,8 @@ func TestCreateTemplateOverride(t *testing.T) {
 	svc, _ := newService()
 	slug := "iphone-us"
 	p, err := svc.Create(context.Background(), "alice", Input{
-		Name:         "my-iphone-de",
-		CountryCode:  "DE",
+		Name:         strPtr("my-iphone-de"),
+		CountryCode:  strPtr("DE"),
 		TemplateSlug: &slug,
 	})
 	if err != nil {
@@ -184,10 +188,35 @@ func TestCreateTemplateOverride(t *testing.T) {
 	}
 }
 
+func TestCreateOmittedNameFillsFromTemplate(t *testing.T) {
+	svc, _ := newService()
+	slug := "iphone-us"
+	p, err := svc.Create(context.Background(), "alice", Input{TemplateSlug: &slug})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if p.Name != "iphone" {
+		t.Fatalf("want template name 'iphone', got %q", p.Name)
+	}
+}
+
+func TestCreateExplicitEmptyNameFailsValidation(t *testing.T) {
+	svc, _ := newService()
+	slug := "iphone-us"
+	empty := ""
+	_, err := svc.Create(context.Background(), "alice", Input{
+		Name:         &empty,
+		TemplateSlug: &slug,
+	})
+	if !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("want ErrInvalidInput, got %v", err)
+	}
+}
+
 func TestCreateUnknownTemplate(t *testing.T) {
 	svc, _ := newService()
 	slug := "nope"
-	_, err := svc.Create(context.Background(), "alice", Input{Name: "x", TemplateSlug: &slug})
+	_, err := svc.Create(context.Background(), "alice", Input{Name: strPtr("x"), TemplateSlug: &slug})
 	if !errors.Is(err, ErrTemplate) {
 		t.Fatalf("want ErrTemplate, got %v", err)
 	}

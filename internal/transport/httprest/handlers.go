@@ -53,14 +53,20 @@ func (h *Handlers) CreateDeviceProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	in := deviceprofiles.Input{
-		Name:          req.Name,
-		DeviceType:    deviceprofiles.DeviceType(req.DeviceType),
-		WindowWidth:   req.WindowWidth,
-		WindowHeight:  req.WindowHeight,
-		UserAgent:     req.UserAgent,
-		CountryCode:   req.CountryCode,
-		CustomHeaders: fromGenHeaders(req.CustomHeaders),
-		TemplateSlug:  req.TemplateSlug,
+		Name:         req.Name,
+		WindowWidth:  req.WindowWidth,
+		WindowHeight: req.WindowHeight,
+		UserAgent:    req.UserAgent,
+		CountryCode:  req.CountryCode,
+		TemplateSlug: req.TemplateSlug,
+	}
+	if req.DeviceType != nil {
+		dt := deviceprofiles.DeviceType(*req.DeviceType)
+		in.DeviceType = &dt
+	}
+	if req.CustomHeaders != nil {
+		hs := fromGenHeaders(req.CustomHeaders)
+		in.CustomHeaders = &hs
 	}
 	if req.Extra != nil {
 		in.Extra = *req.Extra

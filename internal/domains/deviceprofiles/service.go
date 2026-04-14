@@ -61,19 +61,33 @@ func (s *Service) Create(ctx context.Context, userID string, in Input) (DevicePr
 		applyTemplate(&in, t)
 	}
 	p := DeviceProfile{
-		ID:            s.newID(),
-		UserID:        userID,
-		Name:          in.Name,
-		DeviceType:    in.DeviceType,
-		WindowWidth:   in.WindowWidth,
-		WindowHeight:  in.WindowHeight,
-		UserAgent:     in.UserAgent,
-		CountryCode:   in.CountryCode,
-		CustomHeaders: in.CustomHeaders,
-		Extra:         in.Extra,
-		TemplateSlug:  in.TemplateSlug,
-		CreatedAt:     s.now(),
-		UpdatedAt:     s.now(),
+		ID:           s.newID(),
+		UserID:       userID,
+		Extra:        in.Extra,
+		TemplateSlug: in.TemplateSlug,
+		CreatedAt:    s.now(),
+		UpdatedAt:    s.now(),
+	}
+	if in.Name != nil {
+		p.Name = *in.Name
+	}
+	if in.DeviceType != nil {
+		p.DeviceType = *in.DeviceType
+	}
+	if in.WindowWidth != nil {
+		p.WindowWidth = *in.WindowWidth
+	}
+	if in.WindowHeight != nil {
+		p.WindowHeight = *in.WindowHeight
+	}
+	if in.UserAgent != nil {
+		p.UserAgent = *in.UserAgent
+	}
+	if in.CountryCode != nil {
+		p.CountryCode = *in.CountryCode
+	}
+	if in.CustomHeaders != nil {
+		p.CustomHeaders = *in.CustomHeaders
 	}
 	if err := p.Validate(); err != nil {
 		metrics.DeviceProfilesValidationErrorsTotal.WithLabelValues(validationField(err)).Inc()
@@ -174,33 +188,41 @@ func containsWord(s, w string) bool {
 	return false
 }
 
-// applyTemplate fills zero-valued Input fields from the template so caller
-// overrides always win.
+// applyTemplate fills absent (nil) Input fields from the template. An
+// explicitly-sent empty/zero value is preserved so that validation surfaces
+// it to the caller instead of being silently overwritten by a template
+// default.
 func applyTemplate(in *Input, t templates.Template) {
-	if in.Name == "" {
-		in.Name = t.Name
+	if in.Name == nil {
+		v := t.Name
+		in.Name = &v
 	}
-	if in.DeviceType == "" {
-		in.DeviceType = DeviceType(t.DeviceType)
+	if in.DeviceType == nil {
+		v := DeviceType(t.DeviceType)
+		in.DeviceType = &v
 	}
-	if in.WindowWidth == 0 {
-		in.WindowWidth = t.WindowWidth
+	if in.WindowWidth == nil {
+		v := t.WindowWidth
+		in.WindowWidth = &v
 	}
-	if in.WindowHeight == 0 {
-		in.WindowHeight = t.WindowHeight
+	if in.WindowHeight == nil {
+		v := t.WindowHeight
+		in.WindowHeight = &v
 	}
-	if in.UserAgent == "" {
-		in.UserAgent = t.UserAgent
+	if in.UserAgent == nil {
+		v := t.UserAgent
+		in.UserAgent = &v
 	}
-	if in.CountryCode == "" {
-		in.CountryCode = t.CountryCode
+	if in.CountryCode == nil {
+		v := t.CountryCode
+		in.CountryCode = &v
 	}
 	if in.CustomHeaders == nil {
 		cloned := make([]Header, len(t.CustomHeaders))
 		for i, h := range t.CustomHeaders {
 			cloned[i] = Header{Key: h.Key, Value: h.Value}
 		}
-		in.CustomHeaders = cloned
+		in.CustomHeaders = &cloned
 	}
 }
 

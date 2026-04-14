@@ -40,16 +40,21 @@ type DeviceProfile struct {
 	UpdatedAt     time.Time
 }
 
+// Input is the Create payload. Pointer fields distinguish "omitted by the
+// client" (nil) from "explicitly sent as empty/zero" (non-nil pointer to the
+// zero value). When TemplateSlug is set, only nil fields are filled from the
+// template — explicit empty values from the client are preserved so that
+// Validate catches them.
 type Input struct {
-	Name          string
-	DeviceType    DeviceType
-	WindowWidth   int
-	WindowHeight  int
-	UserAgent     string
-	CountryCode   string
-	CustomHeaders []Header
+	Name          *string
+	DeviceType    *DeviceType
+	WindowWidth   *int
+	WindowHeight  *int
+	UserAgent     *string
+	CountryCode   *string
+	CustomHeaders *[]Header
 	Extra         map[string]any
-	TemplateSlug  *string // if set, Create fills unset fields from the template
+	TemplateSlug  *string // if set, Create fills unset (nil) fields from the template
 }
 
 // Patch is a partial update: nil fields are left unchanged.
