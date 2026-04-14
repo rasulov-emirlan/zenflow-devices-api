@@ -9,7 +9,7 @@ import (
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/auth"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/profiles"
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/domains/templates"
-	"github.com/rasulov-emirlan/zenflow-devices-api/pkg/httpx"
+	"github.com/rasulov-emirlan/zenflow-devices-api/internal/transport/httprest/gen"
 )
 
 type Deps struct {
@@ -19,36 +19,17 @@ type Deps struct {
 	Templates *templates.Service
 }
 
+// NewRouter wires the generated OpenAPI server into a chi router with project
+// middleware. /healthz is public; everything else requires Basic Auth.
 func NewRouter(d Deps) http.Handler {
-	r := chi.NewRouter()
+	handlers := &Handlers{profiles: d.Profiles, templates: d.Templates, log: d.Logger}
 
+	r := chi.NewRouter()
 	r.Use(requestIDMW)
 	r.Use(recovererMW(d.Logger))
 	r.Use(loggerMW(d.Logger))
+	r.Use(basicAuthExcept(d.Auth, "/healthz"))
 
-	r.Get("/healthz", func(w http.ResponseWriter, _ *http.Request) {
-		httpx.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
-	})
-
-	prof := &profilesHandler{svc: d.Profiles, log: d.Logger}
-	tmpl := &templatesHandler{svc: d.Templates, log: d.Logger}
-
-	r.Group(func(r chi.Router) {
-		r.Use(basicAuthMW(d.Auth))
-
-		r.Route("/profiles", func(r chi.Router) {
-			r.Post("/", prof.create)
-			r.Get("/", prof.list)
-			r.Get("/{id}", prof.get)
-			r.Patch("/{id}", prof.patch)
-			r.Delete("/{id}", prof.delete)
-		})
-
-		r.Route("/templates", func(r chi.Router) {
-			r.Get("/", tmpl.list)
-			r.Get("/{slug}", tmpl.get)
-		})
-	})
-
+	gen.HandlerFromMux(handlers, r)
 	return r
 }

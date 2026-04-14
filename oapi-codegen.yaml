@@ -1,0 +1,9 @@
+package: gen
+output: internal/transport/httprest/gen/server.gen.go
+generate:
+  chi-server: true
+  models: true
+  strict-server: false
+  embedded-spec: false
+output-options:
+  skip-prune: true

@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/rasulov-emirlan/zenflow-devices-api/internal/auth"
-	"github.com/rasulov-emirlan/zenflow-devices-api/pkg/httpx"
+	"github.com/rasulov-emirlan/zenflow-devices-api/internal/transport/httprest/respond"
 )
 
 type ctxKey int
@@ -60,7 +60,7 @@ func recovererMW(log *slog.Logger) func(http.Handler) http.Handler {
 						slog.String("stack", string(debug.Stack())),
 						slog.String("request_id", RequestID(r.Context())),
 					)
-					httpx.WriteError(w, http.StatusInternalServerError, "internal_error", "internal error")
+					respond.Error(w, http.StatusInternalServerError, "internal_error", "internal error")
 				}
 			}()
 			next.ServeHTTP(w, r)
@@ -95,19 +95,39 @@ func loggerMW(log *slog.Logger) func(http.Handler) http.Handler {
 	}
 }
 
+// basicAuthExcept applies Basic Auth to every request except those whose path
+// is in the skip set (e.g. /healthz).
+func basicAuthExcept(resolver *auth.Resolver, skip ...string) func(http.Handler) http.Handler {
+	skipSet := make(map[string]struct{}, len(skip))
+	for _, p := range skip {
+		skipSet[p] = struct{}{}
+	}
+	auth := basicAuthMW(resolver)
+	return func(next http.Handler) http.Handler {
+		authed := auth(next)
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if _, ok := skipSet[r.URL.Path]; ok {
+				next.ServeHTTP(w, r)
+				return
+			}
+			authed.ServeHTTP(w, r)
+		})
+	}
+}
+
 func basicAuthMW(resolver *auth.Resolver) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			user, pass, ok := r.BasicAuth()
 			if !ok {
 				w.Header().Set("WWW-Authenticate", authRealm)
-				httpx.WriteError(w, http.StatusUnauthorized, "unauthorized", "credentials required")
+				respond.Error(w, http.StatusUnauthorized, "unauthorized", "credentials required")
 				return
 			}
 			uid, err := resolver.Verify(user, pass)
 			if err != nil {
 				w.Header().Set("WWW-Authenticate", authRealm)
-				httpx.WriteError(w, http.StatusUnauthorized, "unauthorized", "invalid credentials")
+				respond.Error(w, http.StatusUnauthorized, "unauthorized", "invalid credentials")
 				return
 			}
 			ctx := context.WithValue(r.Context(), ctxUserID, uid)
