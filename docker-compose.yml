@@ -5,8 +5,6 @@ services:
       POSTGRES_USER: zenflow
       POSTGRES_PASSWORD: zenflow
       POSTGRES_DB: zenflow
-    ports:
-      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U zenflow -d zenflow"]
       interval: 2s
@@ -22,6 +20,6 @@ services:
       PORT: 8080
       DATABASE_URL: postgres://zenflow:zenflow@postgres:5432/zenflow?sslmode=disable
       LOG_LEVEL: info
-      BASIC_AUTH_USERS: "alice:$$2a$$10$$Q9m2r.Dh7j8lq3vFJHS2/eCLXWnZkGm/9Lqg8LeZVsWrA/VjKrqqS"
+      BASIC_AUTH_USERS: "alice:$$2a$$10$$Y10WC4uCFi2qC5f/gts5s.5qYGjkRJM5It.MKhZvAevUnto6fyMgi"
     ports:
       - "8080:8080"
