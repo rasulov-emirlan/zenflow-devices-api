@@ -12,6 +12,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/rasulov-emirlan/zenflow-devices-api/pkg/pgxtags"
 )
 
 // OnConflict selects how existing rows are handled when seeding.
@@ -87,6 +89,7 @@ func (s *TemplateSeeder) Seed(ctx context.Context, opts Options) error {
 		return errors.New("templates.json is empty")
 	}
 
+	ctx = pgxtags.With(ctx, "upsert", "templates")
 	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("begin: %w", err)

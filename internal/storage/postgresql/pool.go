@@ -9,6 +9,8 @@ import (
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/multitracer"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/rasulov-emirlan/zenflow-devices-api/pkg/pgxtags"
 )
 
 //go:embed migrations/*.sql
@@ -30,7 +32,7 @@ func OpenPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new pool: %w", err)
 	}
-	if err := pool.Ping(ctx); err != nil {
+	if err := pool.Ping(pgxtags.With(ctx, "ping", "internal")); err != nil {
 		pool.Close()
 		return nil, fmt.Errorf("ping: %w", err)
 	}
